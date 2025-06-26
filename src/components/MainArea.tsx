@@ -6,26 +6,27 @@ import ImageEditor from './ImageEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MainAreaProps {
   steps: Step[];
   onStepsChange: (steps: Step[]) => void;
-  isVerticalLayout: boolean;
   instructionTitle: string;
   onTitleChange: (title: string) => void;
   instructionDescription: string;
   onDescriptionChange: (description: string) => void;
+  onPreview: () => void;
 }
 
 const MainArea: React.FC<MainAreaProps> = ({
   steps,
   onStepsChange,
-  isVerticalLayout,
   instructionTitle,
   onTitleChange,
   instructionDescription,
-  onDescriptionChange
+  onDescriptionChange,
+  onPreview
 }) => {
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [editingImageStepId, setEditingImageStepId] = useState<string | null>(null);
@@ -64,13 +65,11 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   const handleImageSave = (imageUrl: string, stepId?: string) => {
     if (stepId) {
-      // Обновляем существующий шаг с изображением
       const updatedSteps = steps.map(step => 
         step.id === stepId ? { ...step, imageUrl } : step
       );
       onStepsChange(updatedSteps);
     } else {
-      // Создаем новый шаг с изображением
       const newStep: Step = {
         id: Date.now().toString(),
         type: 'image',
@@ -86,7 +85,7 @@ const MainArea: React.FC<MainAreaProps> = ({
   };
 
   return (
-    <div className="flex-1 bg-slate-950 overflow-auto">
+    <div className="flex-1 overflow-auto" style={{ background: 'var(--bg-primary)' }}>
       {showImageEditor && (
         <ImageEditor
           onSave={handleImageSave}
@@ -100,18 +99,36 @@ const MainArea: React.FC<MainAreaProps> = ({
       
       <div className="p-6 max-w-4xl mx-auto">
         <div className="mb-8">
-          <Input
-            placeholder="Название инструкции"
-            value={instructionTitle}
-            onChange={(e) => onTitleChange(e.target.value)}
-            className="text-2xl font-bold bg-transparent border-none text-white placeholder-slate-400 px-0 focus-visible:ring-0 mb-4"
-          />
+          <div className="flex justify-between items-center mb-4">
+            <Input
+              placeholder="Название инструкции"
+              value={instructionTitle}
+              onChange={(e) => onTitleChange(e.target.value)}
+              className="text-2xl font-bold bg-transparent border-none px-0 focus-visible:ring-0 flex-1"
+              style={{ 
+                color: 'var(--text-primary)',
+                '::placeholder': { color: 'var(--text-secondary)' }
+              }}
+            />
+            <Button
+              onClick={onPreview}
+              className="bg-green-600 hover:bg-green-700 ml-4"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Предпросмотр
+            </Button>
+          </div>
           
           <Textarea
             placeholder="Описание инструкции (необязательно)"
             value={instructionDescription}
             onChange={(e) => onDescriptionChange(e.target.value)}
-            className="bg-slate-800 border-slate-700 text-slate-300 resize-none"
+            className="resize-none"
+            style={{ 
+              background: 'var(--bg-secondary)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-primary)'
+            }}
             rows={2}
           />
         </div>
@@ -119,10 +136,10 @@ const MainArea: React.FC<MainAreaProps> = ({
         {steps.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📝</div>
-            <h3 className="text-xl font-medium text-white mb-2">
+            <h3 className="text-xl font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
               Начните создание инструкции
             </h3>
-            <p className="text-slate-400 mb-4">
+            <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
               Добавьте первый шаг, используя панель слева
             </p>
           </div>
@@ -133,7 +150,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className={`space-y-4 ${isVerticalLayout ? 'flex-col' : 'grid grid-cols-1 gap-4'}`}
+                  className="space-y-4"
                 >
                   {steps.map((step, index) => (
                     <Draggable key={step.id} draggableId={step.id} index={index}>
@@ -165,7 +182,7 @@ const MainArea: React.FC<MainAreaProps> = ({
 
         {steps.length > 0 && (
           <div className="mt-8 text-center">
-            <div className="text-sm text-slate-400">
+            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               Всего шагов: {steps.length}
             </div>
           </div>
