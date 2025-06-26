@@ -1,13 +1,10 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Upload, Crop, Save, X, RotateCw, Scissors, Palette } from 'lucide-react';
-import Cropper from 'cropperjs';
-import 'cropperjs/dist/cropper.css';
-import { Stage, Layer, Image as KonvaImage, Rect, Circle, Line } from 'react-konva';
-import useImage from '../hooks/use-image';
+import CropperCanvas, { CropperCanvasRef } from './CropperCanvas';
+import KonvaAnnotations, { KonvaAnnotationsRef } from './KonvaAnnotations';
 
 interface ImageEditorProps {
   onSave: (imageUrl: string, stepId?: string) => void;
@@ -24,42 +21,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [editMode, setEditMode] = useState<'crop' | 'konva'>('crop');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const cropperRef = useRef<Cropper | null>(null);
-  const stageRef = useRef(null);
-  const [image] = useImage(selectedImage || '');
-  const [annotations, setAnnotations] = useState<any[]>([]);
-  const [tool, setTool] = useState<'select' | 'rect' | 'circle' | 'pen'>('select');
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [currentPath, setCurrentPath] = useState<number[]>([]);
-
-  useEffect(() => {
-    if (imageRef.current && selectedImage && editMode === 'crop') {
-      if (cropperRef.current) {
-        cropperRef.current.destroy();
-        cropperRef.current = null;
-      }
-      cropperRef.current = new Cropper(imageRef.current, {
-        viewMode: 1,
-        dragMode: 'crop',
-        aspectRatio: NaN,
-        preview: '',
-        guides: true,
-        center: true,
-        highlight: false,
-        cropBoxMovable: true,
-        cropBoxResizable: true,
-        toggleDragModeOnDblclick: false,
-      });
-    }
-
-    return () => {
-      if (cropperRef.current) {
-        cropperRef.current.destroy();
-        cropperRef.current = null;
-      }
-    };
-  }, [selectedImage, editMode]);
+  const cropperRef = useRef<CropperCanvasRef>(null);
+  const konvaRef = useRef<KonvaAnnotationsRef>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -83,18 +46,17 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     setIsProcessing(true);
     
     try {
-      const canvas = cropperRef.current.getCroppedCanvas();
-      if (canvas) {
-        const dataURL = canvas.toDataURL('image/jpeg', 0.9);
-        setSelectedImage(dataURL);
-        setIsProcessing(false);
+      const croppedImage = cropperRef.current.getCroppedImage();
+      if (croppedImage) {
+        setSelectedImage(croppedImage);
+        toast.success('Изображение обрезано');
       } else {
-        setIsProcessing(false);
         toast.error('Ошибка при обрезке изображения');
       }
     } catch (error) {
-      setIsProcessing(false);
       toast.error('Ошибка при обрезке изображения');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -102,96 +64,30 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     if (!cropperRef.current) return;
     try {
       cropperRef.current.rotate(90);
+      toast.success('Изображение повернуто');
     } catch (error) {
       toast.error('Ошибка при повороте изображения');
     }
   };
 
-  const handleKonvaMouseDown = (e: any) => {
-    if (tool === 'select') return;
-
-    setIsDrawing(true);
-    const pos = e.target.getStage().getPointerPosition();
-
-    if (tool === 'rect') {
-      const newRect = {
-        x: pos.x,
-        y: pos.y,
-        width: 0,
-        height: 0,
-        fill: 'transparent',
-        stroke: 'red',
-        strokeWidth: 2,
-        id: Date.now(),
-        type: 'rect'
-      };
-      setAnnotations([...annotations, newRect]);
-    } else if (tool === 'circle') {
-      const newCircle = {
-        x: pos.x,
-        y: pos.y,
-        radius: 0,
-        fill: 'transparent',
-        stroke: 'red',
-        strokeWidth: 2,
-        id: Date.now(),
-        type: 'circle'
-      };
-      setAnnotations([...annotations, newCircle]);
-    } else if (tool === 'pen') {
-      setCurrentPath([pos.x, pos.y]);
-    }
-  };
-
-  const handleKonvaMouseMove = (e: any) => {
-    if (!isDrawing) return;
-
-    const stage = e.target.getStage();
-    const point = stage.getPointerPosition();
-
-    if (tool === 'pen') {
-      setCurrentPath([...currentPath, point.x, point.y]);
-    } else {
-      const newAnnotations = [...annotations];
-      const lastAnnotation = newAnnotations[newAnnotations.length - 1];
-
-      if (tool === 'rect') {
-        lastAnnotation.width = point.x - lastAnnotation.x;
-        lastAnnotation.height = point.y - lastAnnotation.y;
-      } else if (tool === 'circle') {
-        const radius = Math.sqrt(
-          Math.pow(point.x - lastAnnotation.x, 2) + Math.pow(point.y - lastAnnotation.y, 2)
-        );
-        lastAnnotation.radius = radius;
-      }
-
-      setAnnotations(newAnnotations);
-    }
-  };
-
-  const handleKonvaMouseUp = () => {
-    if (tool === 'pen' && currentPath.length > 0) {
-      const newLine = {
-        points: currentPath,
-        stroke: 'red',
-        strokeWidth: 2,
-        id: Date.now(),
-        type: 'line'
-      };
-      setAnnotations([...annotations, newLine]);
-      setCurrentPath([]);
-    }
-    setIsDrawing(false);
-  };
-
-  const handleKonvaSave = () => {
-    if (!stageRef.current) return;
+  const handleApplyAnnotations = () => {
+    if (!konvaRef.current) return;
 
     setIsProcessing(true);
-    const stage = stageRef.current as any;
-    const dataURL = stage.toDataURL();
-    setSelectedImage(dataURL);
-    setIsProcessing(false);
+    
+    try {
+      const annotatedImage = konvaRef.current.getAnnotatedImage();
+      if (annotatedImage) {
+        setSelectedImage(annotatedImage);
+        toast.success('Аннотации применены');
+      } else {
+        toast.error('Ошибка при применении аннотаций');
+      }
+    } catch (error) {
+      toast.error('Ошибка при применении аннотаций');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleSave = () => {
@@ -201,6 +97,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     }
 
     onSave(selectedImage, stepId || undefined);
+    toast.success('Изображение сохранено');
   };
 
   return (
@@ -260,16 +157,13 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
           {selectedImage && (
             <div className="space-y-4">
               {editMode === 'crop' ? (
-                <div className="border border-slate-600 rounded-lg p-4 bg-slate-900">
-                  <img
-                    ref={imageRef}
-                    src={selectedImage}
-                    alt="Редактируемое изображение"
-                    className="max-w-full h-auto"
-                    style={{ maxHeight: '500px' }}
+                <div className="space-y-4">
+                  <CropperCanvas 
+                    ref={cropperRef}
+                    imageUrl={selectedImage}
                   />
                   
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2">
                     <Button
                       onClick={handleCrop}
                       disabled={isProcessing}
@@ -289,123 +183,15 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="border border-slate-600 rounded-lg p-4 bg-slate-900">
-                  <div className="flex gap-2 mb-4">
-                    <Button
-                      onClick={() => setTool('select')}
-                      variant={tool === 'select' ? 'default' : 'outline'}
-                      size="sm"
-                    >
-                      Выбор
-                    </Button>
-                    <Button
-                      onClick={() => setTool('rect')}
-                      variant={tool === 'rect' ? 'default' : 'outline'}
-                      size="sm"
-                    >
-                      Прямоугольник
-                    </Button>
-                    <Button
-                      onClick={() => setTool('circle')}
-                      variant={tool === 'circle' ? 'default' : 'outline'}
-                      size="sm"
-                    >
-                      Круг
-                    </Button>
-                    <Button
-                      onClick={() => setTool('pen')}
-                      variant={tool === 'pen' ? 'default' : 'outline'}
-                      size="sm"
-                    >
-                      Рисование
-                    </Button>
-                    <Button
-                      onClick={() => setAnnotations([])}
-                      variant="outline"
-                      size="sm"
-                      className="border-red-600 text-red-400"
-                    >
-                      Очистить
-                    </Button>
-                  </div>
+                <div className="space-y-4">
+                  <KonvaAnnotations
+                    ref={konvaRef}
+                    imageUrl={selectedImage}
+                  />
                   
-                  <Stage
-                    width={800}
-                    height={500}
-                    ref={stageRef}
-                    onMouseDown={handleKonvaMouseDown}
-                    onMousemove={handleKonvaMouseMove}
-                    onMouseup={handleKonvaMouseUp}
-                  >
-                    <Layer>
-                      {image && (
-                        <KonvaImage
-                          image={image}
-                          width={800}
-                          height={500}
-                          scaleX={800 / (image.width || 800)}
-                          scaleY={500 / (image.height || 500)}
-                        />
-                      )}
-                      
-                      {annotations.map((annotation) => {
-                        if (annotation.type === 'rect') {
-                          return (
-                            <Rect
-                              key={annotation.id}
-                              x={annotation.x}
-                              y={annotation.y}
-                              width={annotation.width}
-                              height={annotation.height}
-                              fill={annotation.fill}
-                              stroke={annotation.stroke}
-                              strokeWidth={annotation.strokeWidth}
-                            />
-                          );
-                        } else if (annotation.type === 'circle') {
-                          return (
-                            <Circle
-                              key={annotation.id}
-                              x={annotation.x}
-                              y={annotation.y}
-                              radius={annotation.radius}
-                              fill={annotation.fill}
-                              stroke={annotation.stroke}
-                              strokeWidth={annotation.strokeWidth}
-                            />
-                          );
-                        } else if (annotation.type === 'line') {
-                          return (
-                            <Line
-                              key={annotation.id}
-                              points={annotation.points}
-                              stroke={annotation.stroke}
-                              strokeWidth={annotation.strokeWidth}
-                              tension={0.5}
-                              lineCap="round"
-                              globalCompositeOperation="source-over"
-                            />
-                          );
-                        }
-                        return null;
-                      })}
-                      
-                      {tool === 'pen' && currentPath.length > 0 && (
-                        <Line
-                          points={currentPath}
-                          stroke="red"
-                          strokeWidth={2}
-                          tension={0.5}
-                          lineCap="round"
-                          globalCompositeOperation="source-over"
-                        />
-                      )}
-                    </Layer>
-                  </Stage>
-                  
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2">
                     <Button
-                      onClick={handleKonvaSave}
+                      onClick={handleApplyAnnotations}
                       disabled={isProcessing}
                       className="bg-green-600 hover:bg-green-700"
                     >
