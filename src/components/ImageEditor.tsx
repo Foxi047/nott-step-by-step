@@ -36,10 +36,9 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   useEffect(() => {
     if (imageRef.current && selectedImage && editMode === 'crop') {
       if (cropperRef.current) {
-        cropperRef.current.destroy();
+        cropperRef.current.clear();
       }
       cropperRef.current = new Cropper(imageRef.current, {
-        viewMode: 1,
         toggleDragModeOnDblclick: false,
         responsive: true,
         restore: false,
@@ -50,7 +49,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
 
     return () => {
       if (cropperRef.current) {
-        cropperRef.current.destroy();
+        cropperRef.current.clear();
         cropperRef.current = null;
       }
     };
@@ -78,7 +77,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     setIsProcessing(true);
     
     try {
-      const canvas = cropperRef.current.getCroppedCanvas();
+      const canvas = cropperRef.current.getCropperCanvas();
       if (canvas) {
         const dataURL = canvas.toDataURL('image/jpeg', 0.9);
         setSelectedImage(dataURL);
@@ -96,7 +95,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   const handleRotate = () => {
     if (!cropperRef.current) return;
     try {
-      cropperRef.current.rotate(90);
+      const currentData = cropperRef.current.getData();
+      cropperRef.current.rotateTo((currentData.rotate || 0) + 90);
     } catch (error) {
       toast.error('Ошибка при повороте изображения');
     }
