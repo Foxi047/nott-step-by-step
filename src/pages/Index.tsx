@@ -7,7 +7,7 @@ import PreviewMode from '../components/PreviewMode';
 import ImageEditor from '../components/ImageEditor';
 import { Step } from '../components/StepEditor';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme, Theme } from '../hooks/useTheme';
 import { exportToHTML, exportToMarkdown, exportToJSON, downloadFile } from '../utils/exportUtils';
 import { toast } from 'sonner';
 
@@ -145,6 +145,21 @@ const Index = () => {
     }
   };
 
+  const handleSaveWithTheme = (selectedTheme: Theme) => {
+    if (steps.length === 0) {
+      toast.error('Добавьте хотя бы один шаг');
+      return;
+    }
+    
+    // Сохраняем инструкцию с информацией о выбранной теме
+    const success = saveInstruction(instructionTitle, instructionDescription, steps, selectedTheme);
+    if (success) {
+      toast.success(`Инструкция сохранена с темой: ${selectedTheme === 'light' ? 'Светлая' : selectedTheme === 'gray' ? 'Серая' : 'Тёмная'}`);
+    } else {
+      toast.error('Ошибка сохранения');
+    }
+  };
+
   const handleExport = (format: 'html' | 'markdown' | 'json') => {
     if (steps.length === 0) {
       toast.error('Нет шагов для экспорта');
@@ -224,6 +239,7 @@ const Index = () => {
           description={previewData.description}
           steps={previewData.steps}
           onClose={() => setShowPreview(false)}
+          onSaveWithTheme={handleSaveWithTheme}
         />
       )}
 

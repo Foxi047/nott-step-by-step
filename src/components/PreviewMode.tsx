@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Download, Copy, Palette } from 'lucide-react';
+import { X, Download, Copy, Palette, Save } from 'lucide-react';
 import { Step } from './StepEditor';
 import { toast } from 'sonner';
 import { useTheme, Theme } from '../hooks/useTheme';
@@ -12,13 +12,15 @@ interface PreviewModeProps {
   description: string;
   steps: Step[];
   onClose: () => void;
+  onSaveWithTheme?: (theme: Theme) => void;
 }
 
 const PreviewMode: React.FC<PreviewModeProps> = ({
   title,
   description,
   steps,
-  onClose
+  onClose,
+  onSaveWithTheme
 }) => {
   const { theme, setTheme } = useTheme();
   const [previewTheme, setPreviewTheme] = useState<Theme>(theme);
@@ -37,7 +39,15 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
     setTheme(newTheme);
   };
 
+  const handleSaveWithCurrentTheme = () => {
+    if (onSaveWithTheme) {
+      onSaveWithTheme(previewTheme);
+      toast.success(`Инструкция сохранена с темой: ${previewTheme === 'light' ? 'Светлая' : previewTheme === 'gray' ? 'Серая' : 'Тёмная'}`);
+    }
+  };
+
   const handleExportHTML = () => {
+    const themeStyles = getThemeStyles(previewTheme);
     const html = `
 <!DOCTYPE html>
 <html lang="ru">
@@ -51,25 +61,25 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
             line-height: 1.6; 
             margin: 0; 
             padding: 40px;
-            background: #f8fafc;
-            color: #334155;
+            background: ${themeStyles.bg};
+            color: ${themeStyles.text};
         }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        h1 { color: #1e293b; margin-bottom: 10px; font-size: 2rem; }
-        .description { color: #64748b; margin-bottom: 30px; font-size: 1.1rem; }
+        .container { max-width: 800px; margin: 0 auto; background: ${themeStyles.cardBg}; padding: 40px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h1 { color: ${themeStyles.text}; margin-bottom: 10px; font-size: 2rem; }
+        .description { color: ${themeStyles.secondary}; margin-bottom: 30px; font-size: 1.1rem; }
         .step { 
             margin: 30px 0; 
             padding: 20px; 
-            border: 1px solid #e2e8f0;
+            border: 1px solid ${themeStyles.border};
             border-radius: 8px;
-            background: #fefefe;
+            background: ${themeStyles.bg};
         }
         .step-header { 
             display: flex; 
             align-items: center; 
             margin-bottom: 15px; 
             font-weight: 600; 
-            color: #1e293b;
+            color: ${themeStyles.text};
             font-size: 1.1rem;
         }
         .step-number { 
@@ -85,14 +95,18 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
             margin-right: 10px;
         }
         .step-content { margin-left: 34px; }
-        pre { 
-            background: #1e293b; 
-            color: #e2e8f0; 
-            padding: 20px; 
-            border-radius: 6px; 
-            overflow-x: auto; 
-            font-family: 'Fira Code', Consolas, monospace;
-            font-size: 0.9rem;
+        .code-container {
+            background: #1e293b;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background: #334155;
         }
         .language-tag {
             background: #3b82f6;
@@ -100,8 +114,29 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
             padding: 2px 8px;
             border-radius: 4px;
             font-size: 0.8rem;
-            margin-bottom: 10px;
-            display: inline-block;
+        }
+        .copy-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+        .copy-btn:hover { background: #16a34a; }
+        pre { 
+            background: #1e293b; 
+            color: #e2e8f0; 
+            padding: 20px; 
+            margin: 0;
+            overflow-x: auto; 
+            font-family: 'Fira Code', Consolas, monospace;
+            font-size: 0.9rem;
         }
         img { 
             max-width: 100%; 
@@ -114,6 +149,19 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
             font-size: 1rem;
             line-height: 1.7;
         }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #22c55e;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .toast.show { transform: translateX(0); }
     </style>
 </head>
 <body>
@@ -128,8 +176,19 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
                 </div>
                 <div class="step-content">
                     ${step.type === 'code' ? `
-                        ${step.language ? `<div class="language-tag">${step.language}</div>` : ''}
-                        <pre><code>${step.content}</code></pre>
+                        <div class="code-container">
+                            <div class="code-header">
+                                ${step.language ? `<div class="language-tag">${step.language}</div>` : ''}
+                                <button onclick="copyCode(this)" class="copy-btn">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="m5 15-1-1v-8c0-1 1-2 2-2h8l1 1"></path>
+                                    </svg>
+                                    Копировать
+                                </button>
+                            </div>
+                            <pre><code>${step.content}</code></pre>
+                        </div>
                     ` : step.type === 'image' && step.imageUrl ? `
                         <img src="${step.imageUrl}" alt="${step.title || ''}" />
                         ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
@@ -140,6 +199,41 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
             </div>
         `).join('')}
     </div>
+    
+    <script>
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-container').querySelector('code');
+            const text = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Код скопирован в буфер обмена!');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Код скопирован в буфер обмена!');
+            });
+        }
+        
+        function showToast(message) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
 </body>
 </html>`;
 
@@ -201,6 +295,16 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
               </SelectContent>
             </Select>
           </div>
+          
+          {onSaveWithTheme && (
+            <Button
+              onClick={handleSaveWithCurrentTheme}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Сохранить с темой
+            </Button>
+          )}
           
           <Button
             onClick={handleExportHTML}

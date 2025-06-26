@@ -1,9 +1,13 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Upload, Crop, Save, X } from 'lucide-react';
+import { Upload, Crop, Save, X, RotateCw, Scissors, Palette } from 'lucide-react';
+import Cropper from 'cropperjs';
+import 'cropperjs/dist/cropper.css';
+import { Stage, Layer, Image as KonvaImage, Rect, Circle, Line } from 'react-konva';
+import useImage from 'use-image';
 
 interface ImageEditorProps {
   onSave: (imageUrl: string, stepId?: string) => void;
@@ -18,8 +22,41 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
 }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [editMode, setEditMode] = useState<'crop' | 'konva'>('crop');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const cropperRef = useRef<Cropper | null>(null);
+  const stageRef = useRef(null);
+  const [image] = useImage(selectedImage || '');
+  const [annotations, setAnnotations] = useState<any[]>([]);
+  const [tool, setTool] = useState<'select' | 'rect' | 'circle' | 'pen'>('select');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [currentPath, setCurrentPath] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (imageRef.current && selectedImage && editMode === 'crop') {
+      if (cropperRef.current) {
+        cropperRef.current.destroy();
+      }
+      cropperRef.current = new Cropper(imageRef.current, {
+        aspectRatio: NaN,
+        viewMode: 1,
+        guides: true,
+        center: true,
+        highlight: true,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: false,
+      });
+    }
+
+    return () => {
+      if (cropperRef.current) {
+        cropperRef.current.destroy();
+        cropperRef.current = null;
+      }
+    };
+  }, [selectedImage, editMode]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -38,35 +75,110 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   };
 
   const handleCrop = () => {
-    if (!selectedImage || !canvasRef.current) return;
+    if (!cropperRef.current) return;
 
     setIsProcessing(true);
     
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const canvas = cropperRef.current.getCroppedCanvas();
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        setSelectedImage(url);
+      }
+      setIsProcessing(false);
+    }, 'image/jpeg', 0.9);
+  };
 
-    const img = new Image();
-    img.onload = () => {
-      // Простая обрезка по центру
-      const size = Math.min(img.width, img.height);
-      const x = (img.width - size) / 2;
-      const y = (img.height - size) / 2;
-      
-      canvas.width = size;
-      canvas.height = size;
-      
-      ctx.drawImage(img, x, y, size, size, 0, 0, size, size);
-      
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          setSelectedImage(url);
-        }
-        setIsProcessing(false);
-      }, 'image/jpeg', 0.9);
-    };
-    img.src = selectedImage;
+  const handleRotate = () => {
+    if (!cropperRef.current) return;
+    cropperRef.current.rotate(90);
+  };
+
+  const handleKonvaMouseDown = (e: any) => {
+    if (tool === 'select') return;
+
+    setIsDrawing(true);
+    const pos = e.target.getStage().getPointerPosition();
+
+    if (tool === 'rect') {
+      const newRect = {
+        x: pos.x,
+        y: pos.y,
+        width: 0,
+        height: 0,
+        fill: 'transparent',
+        stroke: 'red',
+        strokeWidth: 2,
+        id: Date.now(),
+        type: 'rect'
+      };
+      setAnnotations([...annotations, newRect]);
+    } else if (tool === 'circle') {
+      const newCircle = {
+        x: pos.x,
+        y: pos.y,
+        radius: 0,
+        fill: 'transparent',
+        stroke: 'red',
+        strokeWidth: 2,
+        id: Date.now(),
+        type: 'circle'
+      };
+      setAnnotations([...annotations, newCircle]);
+    } else if (tool === 'pen') {
+      setCurrentPath([pos.x, pos.y]);
+    }
+  };
+
+  const handleKonvaMouseMove = (e: any) => {
+    if (!isDrawing) return;
+
+    const stage = e.target.getStage();
+    const point = stage.getPointerPosition();
+
+    if (tool === 'pen') {
+      setCurrentPath([...currentPath, point.x, point.y]);
+    } else {
+      const newAnnotations = [...annotations];
+      const lastAnnotation = newAnnotations[newAnnotations.length - 1];
+
+      if (tool === 'rect') {
+        lastAnnotation.width = point.x - lastAnnotation.x;
+        lastAnnotation.height = point.y - lastAnnotation.y;
+      } else if (tool === 'circle') {
+        const radius = Math.sqrt(
+          Math.pow(point.x - lastAnnotation.x, 2) + Math.pow(point.y - lastAnnotation.y, 2)
+        );
+        lastAnnotation.radius = radius;
+      }
+
+      setAnnotations(newAnnotations);
+    }
+  };
+
+  const handleKonvaMouseUp = () => {
+    if (tool === 'pen' && currentPath.length > 0) {
+      const newLine = {
+        points: currentPath,
+        stroke: 'red',
+        strokeWidth: 2,
+        id: Date.now(),
+        type: 'line'
+      };
+      setAnnotations([...annotations, newLine]);
+      setCurrentPath([]);
+    }
+    setIsDrawing(false);
+  };
+
+  const handleKonvaSave = () => {
+    if (!stageRef.current) return;
+
+    setIsProcessing(true);
+    const stage = stageRef.current as any;
+    const dataURL = stage.toDataURL();
+    setSelectedImage(dataURL);
+    setIsProcessing(false);
   };
 
   const handleSave = () => {
@@ -80,9 +192,9 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+      <div className="bg-slate-800 rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white">Редактор изображений</h2>
+          <h2 className="text-xl font-bold text-white">Продвинутый редактор изображений</h2>
           <Button
             variant="ghost"
             onClick={onCancel}
@@ -93,7 +205,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
         </div>
 
         <div className="space-y-4">
-          <div>
+          <div className="flex gap-2">
             <input
               type="file"
               ref={fileInputRef}
@@ -103,47 +215,206 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
             />
             <Button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               <Upload className="w-4 h-4 mr-2" />
               Выбрать изображение
             </Button>
+
+            {selectedImage && (
+              <>
+                <Button
+                  onClick={() => setEditMode('crop')}
+                  variant={editMode === 'crop' ? 'default' : 'outline'}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Crop className="w-4 h-4 mr-2" />
+                  Обрезка
+                </Button>
+                
+                <Button
+                  onClick={() => setEditMode('konva')}
+                  variant={editMode === 'konva' ? 'default' : 'outline'}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  <Palette className="w-4 h-4 mr-2" />
+                  Аннотации
+                </Button>
+              </>
+            )}
           </div>
 
           {selectedImage && (
             <div className="space-y-4">
-              <div className="border border-slate-600 rounded-lg p-4 bg-slate-900">
-                <img
-                  src={selectedImage}
-                  alt="Выбранное изображение"
-                  className="max-w-full h-auto rounded"
-                  style={{ maxHeight: '400px' }}
-                />
-              </div>
+              {editMode === 'crop' ? (
+                <div className="border border-slate-600 rounded-lg p-4 bg-slate-900">
+                  <img
+                    ref={imageRef}
+                    src={selectedImage}
+                    alt="Редактируемое изображение"
+                    className="max-w-full h-auto"
+                    style={{ maxHeight: '500px' }}
+                  />
+                  
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      onClick={handleCrop}
+                      disabled={isProcessing}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Scissors className="w-4 h-4 mr-2" />
+                      {isProcessing ? 'Обрезка...' : 'Применить обрезку'}
+                    </Button>
+                    
+                    <Button
+                      onClick={handleRotate}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <RotateCw className="w-4 h-4 mr-2" />
+                      Повернуть на 90°
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="border border-slate-600 rounded-lg p-4 bg-slate-900">
+                  <div className="flex gap-2 mb-4">
+                    <Button
+                      onClick={() => setTool('select')}
+                      variant={tool === 'select' ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      Выбор
+                    </Button>
+                    <Button
+                      onClick={() => setTool('rect')}
+                      variant={tool === 'rect' ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      Прямоугольник
+                    </Button>
+                    <Button
+                      onClick={() => setTool('circle')}
+                      variant={tool === 'circle' ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      Круг
+                    </Button>
+                    <Button
+                      onClick={() => setTool('pen')}
+                      variant={tool === 'pen' ? 'default' : 'outline'}
+                      size="sm"
+                    >
+                      Рисование
+                    </Button>
+                    <Button
+                      onClick={() => setAnnotations([])}
+                      variant="outline"
+                      size="sm"
+                      className="border-red-600 text-red-400"
+                    >
+                      Очистить
+                    </Button>
+                  </div>
+                  
+                  <Stage
+                    width={800}
+                    height={500}
+                    ref={stageRef}
+                    onMouseDown={handleKonvaMouseDown}
+                    onMousemove={handleKonvaMouseMove}
+                    onMouseup={handleKonvaMouseUp}
+                  >
+                    <Layer>
+                      {image && (
+                        <KonvaImage
+                          image={image}
+                          width={800}
+                          height={500}
+                          scaleX={800 / (image.width || 800)}
+                          scaleY={500 / (image.height || 500)}
+                        />
+                      )}
+                      
+                      {annotations.map((annotation) => {
+                        if (annotation.type === 'rect') {
+                          return (
+                            <Rect
+                              key={annotation.id}
+                              x={annotation.x}
+                              y={annotation.y}
+                              width={annotation.width}
+                              height={annotation.height}
+                              fill={annotation.fill}
+                              stroke={annotation.stroke}
+                              strokeWidth={annotation.strokeWidth}
+                            />
+                          );
+                        } else if (annotation.type === 'circle') {
+                          return (
+                            <Circle
+                              key={annotation.id}
+                              x={annotation.x}
+                              y={annotation.y}
+                              radius={annotation.radius}
+                              fill={annotation.fill}
+                              stroke={annotation.stroke}
+                              strokeWidth={annotation.strokeWidth}
+                            />
+                          );
+                        } else if (annotation.type === 'line') {
+                          return (
+                            <Line
+                              key={annotation.id}
+                              points={annotation.points}
+                              stroke={annotation.stroke}
+                              strokeWidth={annotation.strokeWidth}
+                              tension={0.5}
+                              lineCap="round"
+                              globalCompositeOperation="source-over"
+                            />
+                          );
+                        }
+                        return null;
+                      })}
+                      
+                      {tool === 'pen' && currentPath.length > 0 && (
+                        <Line
+                          points={currentPath}
+                          stroke="red"
+                          strokeWidth={2}
+                          tension={0.5}
+                          lineCap="round"
+                          globalCompositeOperation="source-over"
+                        />
+                      )}
+                    </Layer>
+                  </Stage>
+                  
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      onClick={handleKonvaSave}
+                      disabled={isProcessing}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {isProcessing ? 'Сохранение...' : 'Применить аннотации'}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleCrop}
-                  disabled={isProcessing}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  <Crop className="w-4 h-4 mr-2" />
-                  {isProcessing ? 'Обработка...' : 'Обрезать по центру'}
-                </Button>
-                
+              <div className="flex justify-end">
                 <Button
                   onClick={handleSave}
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  Сохранить
+                  Сохранить изображение
                 </Button>
               </div>
             </div>
           )}
         </div>
-
-        <canvas ref={canvasRef} className="hidden" />
       </div>
     </div>
   );
