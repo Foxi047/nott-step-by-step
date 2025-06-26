@@ -104,10 +104,9 @@ const MainArea: React.FC<MainAreaProps> = ({
               placeholder="Название инструкции"
               value={instructionTitle}
               onChange={(e) => onTitleChange(e.target.value)}
-              className="text-2xl font-bold bg-transparent border-none px-0 focus-visible:ring-0 flex-1"
+              className="text-2xl font-bold bg-transparent border-none px-0 focus-visible:ring-0 flex-1 placeholder:opacity-60"
               style={{ 
-                color: 'var(--text-primary)',
-                '::placeholder': { color: 'var(--text-secondary)' }
+                color: 'var(--text-primary)'
               }}
             />
             <Button
@@ -123,7 +122,7 @@ const MainArea: React.FC<MainAreaProps> = ({
             placeholder="Описание инструкции (необязательно)"
             value={instructionDescription}
             onChange={(e) => onDescriptionChange(e.target.value)}
-            className="resize-none"
+            className="resize-none placeholder:opacity-60"
             style={{ 
               background: 'var(--bg-secondary)',
               borderColor: 'var(--border-color)',
