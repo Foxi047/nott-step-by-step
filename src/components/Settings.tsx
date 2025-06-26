@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Palette, Info, HelpCircle, Plus, Trash2, Template } from 'lucide-react';
+import { X, Palette, Info, HelpCircle, Plus, Trash2, Layout } from 'lucide-react';
 import { useTheme, Theme } from '../hooks/useTheme';
 import { toast } from 'sonner';
 
@@ -260,7 +260,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
                 : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
-            <Template className="w-4 h-4 inline mr-2" />
+            <Layout className="w-4 h-4 inline mr-2" />
             Шаблоны
           </button>
           <button
