@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +6,7 @@ import { Upload, Crop, Save, X, RotateCw, Scissors, Palette } from 'lucide-react
 import Cropper from 'cropperjs';
 import 'cropperjs/dist/cropper.css';
 import { Stage, Layer, Image as KonvaImage, Rect, Circle, Line } from 'react-konva';
-import useImage from 'use-image';
+import useImage from '../hooks/use-image';
 
 interface ImageEditorProps {
   onSave: (imageUrl: string, stepId?: string) => void;
@@ -39,7 +38,6 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
         cropperRef.current.destroy();
       }
       cropperRef.current = new Cropper(imageRef.current, {
-        aspectRatio: NaN,
         viewMode: 1,
         guides: true,
         center: true,

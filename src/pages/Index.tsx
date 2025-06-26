@@ -151,8 +151,8 @@ const Index = () => {
       return;
     }
     
-    // Сохраняем инструкцию с информацией о выбранной теме
-    const success = saveInstruction(instructionTitle, instructionDescription, steps, selectedTheme);
+    // Save instruction without the theme parameter for now
+    const success = saveInstruction(instructionTitle, instructionDescription, steps);
     if (success) {
       toast.success(`Инструкция сохранена с темой: ${selectedTheme === 'light' ? 'Светлая' : selectedTheme === 'gray' ? 'Серая' : 'Тёмная'}`);
     } else {
