@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,8 +40,10 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
         cropperRef.current = null;
       }
       cropperRef.current = new Cropper(imageRef.current, {
-        autoCrop: true,
-        restore: false,
+        viewMode: 1,
+        dragMode: 'crop',
+        aspectRatio: NaN,
+        preview: '',
         guides: true,
         center: true,
         highlight: false,
