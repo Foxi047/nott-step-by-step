@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import MainArea from '../components/MainArea';
 import Settings from '../components/Settings';
 import SavedProjects from '../components/SavedProjects';
 import PreviewMode from '../components/PreviewMode';
+import ImageEditor from '../components/ImageEditor';
 import { Step } from '../components/StepEditor';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
 import { useTheme } from '../hooks/useTheme';
@@ -18,22 +18,42 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showSavedProjects, setShowSavedProjects] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showImageEditor, setShowImageEditor] = useState(false);
   const [previewData, setPreviewData] = useState<{title: string, description: string, steps: Step[]} | null>(null);
   
   const { saveInstruction } = useInstructionStorage();
   const { theme } = useTheme();
 
   const handleAddStep = (type: 'text' | 'image' | 'code') => {
+    if (type === 'image') {
+      setShowImageEditor(true);
+      return;
+    }
+
     const newStep: Step = {
       id: Date.now().toString(),
       type,
       content: type === 'code' ? '// Введите ваш код здесь' : 'Новый шаг',
-      title: type === 'code' ? 'Код' : type === 'image' ? 'Изображение' : 'Текст',
+      title: type === 'code' ? 'Код' : 'Текст',
       language: type === 'code' ? 'javascript' : undefined
     };
     
     setSteps(prev => [...prev, newStep]);
-    toast.success(`Добавлен новый шаг: ${type === 'text' ? 'Текст' : type === 'code' ? 'Код' : 'Изображение'}`);
+    toast.success(`Добавлен новый шаг: ${type === 'text' ? 'Текст' : 'Код'}`);
+  };
+
+  const handleImageSave = (imageUrl: string) => {
+    const newStep: Step = {
+      id: Date.now().toString(),
+      type: 'image',
+      content: '',
+      imageUrl,
+      title: 'Новое изображение'
+    };
+    
+    setSteps(prev => [...prev, newStep]);
+    setShowImageEditor(false);
+    toast.success('Изображение добавлено');
   };
 
   const handleAddStepTemplate = (template: string) => {
@@ -206,10 +226,17 @@ const Index = () => {
           onClose={() => setShowPreview(false)}
         />
       )}
+
+      {showImageEditor && (
+        <ImageEditor
+          onSave={handleImageSave}
+          onCancel={() => setShowImageEditor(false)}
+        />
+      )}
       
       <Sidebar
         onAddStep={handleAddStep}
-        onLoadImage={handleLoadImage}
+        onLoadImage={() => setShowImageEditor(true)}
         onPasteImage={handlePasteImage}
         onSave={handleSave}
         onExport={handleExport}

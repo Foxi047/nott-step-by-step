@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Edit, Trash2, Copy, FileText, Eye } from 'lucide-react';
+import { X, Edit, Trash2, FileText, Eye } from 'lucide-react';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
 import { Step } from './StepEditor';
 import { toast } from 'sonner';
@@ -29,45 +29,6 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({
     if (window.confirm('Вы уверены, что хотите удалить этот проект?')) {
       deleteInstruction(id);
       toast.success('Проект удален');
-    }
-  };
-
-  const handleCopyHTML = async (instruction: any) => {
-    try {
-      // Простая генерация HTML
-      const html = `
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${instruction.title}</title>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
-        .step { margin: 20px 0; padding: 15px; border-left: 4px solid #007bff; }
-        .step-title { font-weight: bold; margin-bottom: 10px; }
-        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
-        img { max-width: 100%; height: auto; }
-    </style>
-</head>
-<body>
-    <h1>${instruction.title}</h1>
-    ${instruction.description ? `<p>${instruction.description}</p>` : ''}
-    ${instruction.steps.map((step: Step, index: number) => `
-        <div class="step">
-            <div class="step-title">Шаг ${index + 1}: ${step.title || ''}</div>
-            ${step.type === 'code' ? `<pre><code>${step.content}</code></pre>` : 
-              step.type === 'image' && step.imageUrl ? `<img src="${step.imageUrl}" alt="${step.title || ''}" />` :
-              `<p>${step.content}</p>`}
-        </div>
-    `).join('')}
-</body>
-</html>`;
-      
-      await navigator.clipboard.writeText(html);
-      toast.success('HTML код скопирован в буфер обмена');
-    } catch (error) {
-      toast.error('Ошибка копирования');
     }
   };
 
@@ -127,15 +88,6 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({
                   >
                     <Eye className="w-3 h-3 mr-1" />
                     Просмотр
-                  </Button>
-                  
-                  <Button
-                    size="sm"
-                    onClick={() => handleCopyHTML(instruction)}
-                    className="bg-purple-600 hover:bg-purple-700 text-xs"
-                  >
-                    <Copy className="w-3 h-3 mr-1" />
-                    HTML
                   </Button>
                   
                   <Button

@@ -17,6 +17,7 @@ interface MainAreaProps {
   instructionDescription: string;
   onDescriptionChange: (description: string) => void;
   onPreview: () => void;
+  onImageUpload?: () => void;
 }
 
 const MainArea: React.FC<MainAreaProps> = ({
@@ -26,7 +27,8 @@ const MainArea: React.FC<MainAreaProps> = ({
   onTitleChange,
   instructionDescription,
   onDescriptionChange,
-  onPreview
+  onPreview,
+  onImageUpload
 }) => {
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [editingImageStepId, setEditingImageStepId] = useState<string | null>(null);
@@ -83,6 +85,13 @@ const MainArea: React.FC<MainAreaProps> = ({
     setEditingImageStepId(null);
     toast.success('Изображение добавлено');
   };
+
+  // Открытие редактора изображений для новых изображений
+  React.useEffect(() => {
+    if (onImageUpload) {
+      setShowImageEditor(true);
+    }
+  }, []);
 
   return (
     <div className="flex-1 overflow-auto" style={{ background: 'var(--bg-primary)' }}>

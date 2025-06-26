@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         </Button>
 
         <Button 
-          onClick={onLoadImage} 
+          onClick={() => onAddStep('image')} 
           className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white"
         >
           <Upload className="w-4 h-4 mr-2" />
