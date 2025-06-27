@@ -1,10 +1,13 @@
 
 import React, { useState } from 'react';
-import { Copy, Trash2, Edit, Check, X, GripVertical, FileIcon, EditIcon } from 'lucide-react';
+import { Copy, Trash2, Edit, Check, X, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import ImageStepEditor from './ImageStepEditor';
+import FileStepEditor from './FileStepEditor';
+import CodeStepEditor from './CodeStepEditor';
 
 export interface Step {
   id: string;
@@ -14,7 +17,7 @@ export interface Step {
   language?: string;
   imageUrl?: string;
   annotations?: any[];
-  fileData?: string; // base64 данные файла
+  fileData?: string;
   fileName?: string;
   fileType?: string;
 }
@@ -70,24 +73,6 @@ const StepEditor: React.FC<StepEditorProps> = ({
     }
   };
 
-  const handleCopyCode = async (event: React.MouseEvent) => {
-    event.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(step.content);
-      toast.success('Код скопирован');
-      
-      // Визуальная обратная связь
-      const button = event.currentTarget as HTMLButtonElement;
-      const originalContent = button.innerHTML;
-      button.innerHTML = '✅';
-      setTimeout(() => {
-        button.innerHTML = originalContent;
-      }, 1500);
-    } catch (err) {
-      toast.error('Ошибка копирования кода');
-    }
-  };
-
   const getStepIcon = () => {
     switch (step.type) {
       case 'text': return '📝';
@@ -99,15 +84,61 @@ const StepEditor: React.FC<StepEditorProps> = ({
     }
   };
 
-  const handleFileDownload = () => {
-    if (step.fileData && step.fileName) {
-      const link = document.createElement('a');
-      link.href = step.fileData;
-      link.download = step.fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+  const renderStepContent = () => {
+    if (step.type === 'image' && step.imageUrl) {
+      return <ImageStepEditor step={step} onEditImage={onEditImage} />;
     }
+    
+    if (step.type === 'code') {
+      return <CodeStepEditor step={step} />;
+    }
+    
+    if (step.type === 'file') {
+      return <FileStepEditor step={step} />;
+    }
+    
+    if (step.type === 'html') {
+      return (
+        <div className="space-y-2">
+          <div className="flex gap-2 mb-2">
+            <Button
+              size="sm"
+              onClick={() => setShowHtmlPreview(false)}
+              variant={!showHtmlPreview ? 'default' : 'outline'}
+              className="text-xs"
+            >
+              Код
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setShowHtmlPreview(true)}
+              variant={showHtmlPreview ? 'default' : 'outline'}
+              className="text-xs"
+            >
+              Предпросмотр
+            </Button>
+          </div>
+          {showHtmlPreview ? (
+            <div 
+              className="bg-white rounded border border-slate-700 p-3 overflow-x-auto"
+              dangerouslySetInnerHTML={{ __html: step.content }}
+            />
+          ) : (
+            <div className="bg-slate-900 rounded border border-slate-700 p-3 overflow-x-auto">
+              <pre className="text-xs sm:text-sm text-green-400 whitespace-pre-wrap break-words">
+                <code>{step.content}</code>
+              </pre>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="text-slate-200 whitespace-pre-wrap break-words text-sm sm:text-base">
+        {step.content}
+      </div>
+    );
   };
 
   return (
@@ -122,16 +153,6 @@ const StepEditor: React.FC<StepEditorProps> = ({
         </div>
         
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {step.type === 'image' && onEditImage && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onEditImage(step.id)}
-              className="text-purple-400 hover:text-purple-300 min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
-            >
-              <EditIcon className="w-4 h-4" />
-            </Button>
-          )}
           <Button
             size="sm"
             variant="ghost"
@@ -214,11 +235,11 @@ const StepEditor: React.FC<StepEditorProps> = ({
           />
           
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" onClick={handleSave} className="bg-green-600 hover:bg-green-700 min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto">
+            <Button size="sm" onClick={handleSave} className="bg-green-600 hover:bg-green-700">
               <Check className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">Сохранить</span>
             </Button>
-            <Button size="sm" variant="outline" onClick={handleCancel} className="border-slate-600 text-slate-300 min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto">
+            <Button size="sm" variant="outline" onClick={handleCancel} className="border-slate-600 text-slate-300">
               <X className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">Отмена</span>
             </Button>
@@ -229,106 +250,7 @@ const StepEditor: React.FC<StepEditorProps> = ({
           {step.title && (
             <h3 className="font-medium text-white text-sm sm:text-base break-words">{step.title}</h3>
           )}
-          
-          {step.type === 'image' && step.imageUrl ? (
-            <div className="relative">
-              <div className="inline-block max-w-full">
-                <img 
-                  src={step.imageUrl} 
-                  alt={step.title || 'Изображение'} 
-                  className="max-w-full h-auto rounded border border-slate-600 block"
-                  style={{ objectFit: 'contain' }}
-                />
-              </div>
-              {step.content && (
-                <p className="text-xs sm:text-sm text-slate-300 mt-2 break-words">{step.content}</p>
-              )}
-            </div>
-          ) : step.type === 'code' ? (
-            <div className="bg-slate-900 rounded border border-slate-700 p-3 overflow-x-auto relative">
-              {step.language && (
-                <div className="text-xs text-slate-400 mb-2">{step.language}</div>
-              )}
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleCopyCode}
-                className="absolute top-2 right-2 text-slate-400 hover:text-white p-1 h-8 w-8"
-                title="Копировать код"
-              >
-                📋
-              </Button>
-              <pre className="text-xs sm:text-sm text-green-400 overflow-x-auto whitespace-pre-wrap break-words pr-10">
-                <code>{step.content}</code>
-              </pre>
-            </div>
-          ) : step.type === 'html' ? (
-            <div className="space-y-2">
-              <div className="flex gap-2 mb-2">
-                <Button
-                  size="sm"
-                  onClick={() => setShowHtmlPreview(false)}
-                  variant={!showHtmlPreview ? 'default' : 'outline'}
-                  className="text-xs"
-                >
-                  Код
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setShowHtmlPreview(true)}
-                  variant={showHtmlPreview ? 'default' : 'outline'}
-                  className="text-xs"
-                >
-                  Предпросмотр
-                </Button>
-              </div>
-              {showHtmlPreview ? (
-                <div 
-                  className="bg-white rounded border border-slate-700 p-3 overflow-x-auto"
-                  dangerouslySetInnerHTML={{ __html: step.content }}
-                />
-              ) : (
-                <div className="bg-slate-900 rounded border border-slate-700 p-3 overflow-x-auto relative">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleCopyCode}
-                    className="absolute top-2 right-2 text-slate-400 hover:text-white p-1 h-8 w-8"
-                    title="Копировать HTML"
-                  >
-                    📋
-                  </Button>
-                  <pre className="text-xs sm:text-sm text-green-400 whitespace-pre-wrap break-words pr-10">
-                    <code>{step.content}</code>
-                  </pre>
-                </div>
-              )}
-            </div>
-          ) : step.type === 'file' ? (
-            <div className="bg-slate-900 rounded border border-slate-700 p-3">
-              <div className="flex items-center gap-3 flex-wrap">
-                <FileIcon className="w-6 h-6 text-blue-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white font-medium truncate">{step.fileName}</p>
-                  <p className="text-xs text-slate-400">{step.fileType}</p>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={handleFileDownload}
-                  className="bg-blue-600 hover:bg-blue-700 flex-shrink-0 min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
-                >
-                  Скачать
-                </Button>
-              </div>
-              {step.content && (
-                <p className="text-xs sm:text-sm text-slate-300 mt-2 break-words">{step.content}</p>
-              )}
-            </div>
-          ) : (
-            <div className="text-slate-200 whitespace-pre-wrap break-words text-sm sm:text-base">
-              {step.content}
-            </div>
-          )}
+          {renderStepContent()}
         </div>
       )}
     </div>

@@ -1,8 +1,7 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import StepEditor, { Step } from './StepEditor';
-import ImageEditor from './ImageEditor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +17,9 @@ interface MainAreaProps {
   onDescriptionChange: (description: string) => void;
   onPreview: () => void;
   onEditImage?: (stepId: string) => void;
+  onUpdateStep: (step: Step) => void;
+  onDeleteStep: (stepId: string) => void;
+  onCopyStep: (step: Step) => void;
 }
 
 const MainArea: React.FC<MainAreaProps> = ({
@@ -28,7 +30,10 @@ const MainArea: React.FC<MainAreaProps> = ({
   instructionDescription,
   onDescriptionChange,
   onPreview,
-  onEditImage
+  onEditImage,
+  onUpdateStep,
+  onDeleteStep,
+  onCopyStep
 }) => {
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -39,27 +44,6 @@ const MainArea: React.FC<MainAreaProps> = ({
 
     onStepsChange(newSteps);
     toast.success('Порядок шагов изменен');
-  };
-
-  const updateStep = (updatedStep: Step) => {
-    const newSteps = steps.map(step => 
-      step.id === updatedStep.id ? updatedStep : step
-    );
-    onStepsChange(newSteps);
-  };
-
-  const deleteStep = (stepId: string) => {
-    const newSteps = steps.filter(step => step.id !== stepId);
-    onStepsChange(newSteps);
-  };
-
-  const copyStep = (step: Step) => {
-    const newStep: Step = {
-      ...step,
-      id: Date.now().toString(),
-      title: step.title ? `${step.title} (копия)` : undefined
-    };
-    onStepsChange([...steps, newStep]);
   };
 
   return (
@@ -130,9 +114,9 @@ const MainArea: React.FC<MainAreaProps> = ({
                         >
                           <StepEditor
                             step={step}
-                            onUpdate={updateStep}
-                            onDelete={deleteStep}
-                            onCopy={copyStep}
+                            onUpdate={onUpdateStep}
+                            onDelete={onDeleteStep}
+                            onCopy={onCopyStep}
                             onEditImage={onEditImage}
                             dragHandleProps={provided.dragHandleProps}
                           />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import MainArea from '../components/MainArea';
 import Settings from '../components/Settings';
@@ -9,11 +9,12 @@ import HtmlTemplateSelector from '../components/HtmlTemplateSelector';
 import { Step } from '../components/StepEditor';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
 import { useTheme, Theme } from '../hooks/useTheme';
+import { useSteps } from '../hooks/useSteps';
+import { useAutosave } from '../hooks/useAutosave';
 import { exportToHTML, exportToMarkdown, exportToJSON, downloadFile } from '../utils/exportUtils';
 import { toast } from 'sonner';
 
 const Index = () => {
-  const [steps, setSteps] = useState<Step[]>([]);
   const [instructionTitle, setInstructionTitle] = useState('Новая инструкция');
   const [instructionDescription, setInstructionDescription] = useState('');
   const [showSettings, setShowSettings] = useState(false);
@@ -26,6 +27,22 @@ const Index = () => {
   
   const { saveInstruction } = useInstructionStorage();
   const { theme } = useTheme();
+  const { steps, addStep, updateStep, deleteStep, copyStep, reorderSteps, setSteps } = useSteps();
+  const { loadAutosave, clearAutosave } = useAutosave(instructionTitle, instructionDescription, steps);
+
+  // Загрузка автосохранения при запуске
+  useEffect(() => {
+    const autosaved = loadAutosave();
+    if (autosaved && autosaved.steps.length > 0) {
+      const shouldRestore = window.confirm('Найдено автосохранение. Восстановить?');
+      if (shouldRestore) {
+        setInstructionTitle(autosaved.title);
+        setInstructionDescription(autosaved.description);
+        setSteps(autosaved.steps);
+        toast.success('Автосохранение восстановлено');
+      }
+    }
+  }, []);
 
   const handleAddStep = (type: 'text' | 'image' | 'code' | 'html' | 'file', fileData?: { name: string; type: string; data: string }) => {
     if (type === 'image') {
@@ -34,44 +51,7 @@ const Index = () => {
       return;
     }
 
-    let newStep: Step;
-
-    if (type === 'file' && fileData) {
-      newStep = {
-        id: Date.now().toString(),
-        type: 'file',
-        content: `Прикрепленный файл: ${fileData.name}`,
-        title: fileData.name,
-        fileData: fileData.data,
-        fileName: fileData.name,
-        fileType: fileData.type
-      };
-    } else if (type === 'html') {
-      newStep = {
-        id: Date.now().toString(),
-        type: 'html',
-        content: '<p>Введите HTML код здесь</p>',
-        title: 'HTML блок'
-      };
-    } else if (type === 'code') {
-      newStep = {
-        id: Date.now().toString(),
-        type: 'code',
-        content: '// Введите ваш код здесь',
-        title: 'Код',
-        language: 'javascript'
-      };
-    } else {
-      // type === 'text'
-      newStep = {
-        id: Date.now().toString(),
-        type: 'text',
-        content: 'Новый шаг',
-        title: 'Текст'
-      };
-    }
-    
-    setSteps(prev => [...prev, newStep]);
+    const newStep = addStep(type, fileData);
     const typeNames: Record<string, string> = {
       text: 'Текст',
       code: 'Код',
@@ -105,14 +85,12 @@ const Index = () => {
 
   const handleImageSave = (imageUrl: string, stepId?: string) => {
     if (stepId) {
-      // Редактирование существующего изображения
-      const updatedSteps = steps.map(step => 
-        step.id === stepId ? { ...step, imageUrl } : step
-      );
-      setSteps(updatedSteps);
-      toast.success('Изображение обновлено');
+      const step = steps.find(s => s.id === stepId);
+      if (step) {
+        updateStep({ ...step, imageUrl });
+        toast.success('Изображение обновлено');
+      }
     } else {
-      // Добавление нового изображения
       const newStep: Step = {
         id: Date.now().toString(),
         type: 'image',
@@ -170,6 +148,7 @@ const Index = () => {
     
     const success = saveInstruction(instructionTitle, instructionDescription, steps);
     if (success) {
+      clearAutosave();
       toast.success('Инструкция сохранена');
     } else {
       toast.error('Ошибка сохранения');
@@ -184,6 +163,7 @@ const Index = () => {
     
     const success = saveInstruction(instructionTitle, instructionDescription, steps);
     if (success) {
+      clearAutosave();
       toast.success(`Инструкция сохранена с темой: ${selectedTheme === 'light' ? 'Светлая' : selectedTheme === 'gray' ? 'Серая' : 'Тёмная'}`);
     } else {
       toast.error('Ошибка сохранения');
@@ -228,6 +208,7 @@ const Index = () => {
     setInstructionTitle(title);
     setInstructionDescription(description);
     setSteps(projectSteps);
+    clearAutosave();
     toast.success('Проект загружен');
   };
 
@@ -304,13 +285,16 @@ const Index = () => {
       
       <MainArea
         steps={steps}
-        onStepsChange={setSteps}
+        onStepsChange={reorderSteps}
         instructionTitle={instructionTitle}
         onTitleChange={setInstructionTitle}
         instructionDescription={instructionDescription}
         onDescriptionChange={setInstructionDescription}
         onPreview={handlePreviewCurrent}
         onEditImage={handleEditImage}
+        onUpdateStep={updateStep}
+        onDeleteStep={deleteStep}
+        onCopyStep={copyStep}
       />
     </div>
   );
