@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 interface SidebarProps {
   onAddStep: (type: 'text' | 'image' | 'code' | 'html' | 'file', fileData?: { name: string; type: string; data: string }) => void;
+  onAddHtmlWithTemplate: () => void;
   onLoadImage: () => void;
   onPasteImage: () => void;
   onSave: () => void;
@@ -16,6 +17,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({
   onAddStep,
+  onAddHtmlWithTemplate,
   onLoadImage,
   onPasteImage,
   onSave,
@@ -69,11 +71,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         </Button>
 
         <Button 
-          onClick={() => onAddStep('html')} 
+          onClick={onAddHtmlWithTemplate} 
           className="w-full justify-start bg-orange-600 hover:bg-orange-700 text-white min-h-[44px]"
         >
           <Code className="w-4 h-4 mr-2" />
-          HTML-блок
+          HTML-блок с шаблоном
         </Button>
 
         <Button 

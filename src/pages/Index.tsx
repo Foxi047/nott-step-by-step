@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import MainArea from '../components/MainArea';
@@ -6,6 +5,7 @@ import Settings from '../components/Settings';
 import SavedProjects from '../components/SavedProjects';
 import PreviewMode from '../components/PreviewMode';
 import ImageEditor from '../components/ImageEditor';
+import HtmlTemplateSelector from '../components/HtmlTemplateSelector';
 import { Step } from '../components/StepEditor';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
 import { useTheme, Theme } from '../hooks/useTheme';
@@ -20,6 +20,7 @@ const Index = () => {
   const [showSavedProjects, setShowSavedProjects] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
+  const [showHtmlTemplateSelector, setShowHtmlTemplateSelector] = useState(false);
   const [editingImageStepId, setEditingImageStepId] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{title: string, description: string, steps: Step[]} | null>(null);
   
@@ -78,6 +79,23 @@ const Index = () => {
       file: 'Файл'
     };
     toast.success(`Добавлен новый шаг: ${typeNames[type] || type}`);
+  };
+
+  const handleAddHtmlWithTemplate = () => {
+    setShowHtmlTemplateSelector(true);
+  };
+
+  const handleSelectHtmlTemplate = (htmlContent: string, title: string) => {
+    const newStep: Step = {
+      id: Date.now().toString(),
+      type: 'html',
+      content: htmlContent,
+      title: title
+    };
+    
+    setSteps(prev => [...prev, newStep]);
+    setShowHtmlTemplateSelector(false);
+    toast.success(`Добавлен HTML-блок: ${title}`);
   };
 
   const handleEditImage = (stepId: string) => {
@@ -265,9 +283,17 @@ const Index = () => {
           stepId={editingImageStepId}
         />
       )}
+
+      {showHtmlTemplateSelector && (
+        <HtmlTemplateSelector
+          onSelectTemplate={handleSelectHtmlTemplate}
+          onCancel={() => setShowHtmlTemplateSelector(false)}
+        />
+      )}
       
       <Sidebar
         onAddStep={handleAddStep}
+        onAddHtmlWithTemplate={handleAddHtmlWithTemplate}
         onLoadImage={() => setShowImageEditor(true)}
         onPasteImage={handlePasteImage}
         onSave={handleSave}

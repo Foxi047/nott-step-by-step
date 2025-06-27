@@ -70,6 +70,24 @@ const StepEditor: React.FC<StepEditorProps> = ({
     }
   };
 
+  const handleCopyCode = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(step.content);
+      toast.success('Код скопирован');
+      
+      // Визуальная обратная связь
+      const button = event.currentTarget as HTMLButtonElement;
+      const originalContent = button.innerHTML;
+      button.innerHTML = '✅';
+      setTimeout(() => {
+        button.innerHTML = originalContent;
+      }, 1500);
+    } catch (err) {
+      toast.error('Ошибка копирования кода');
+    }
+  };
+
   const getStepIcon = () => {
     switch (step.type) {
       case 'text': return '📝';
@@ -219,7 +237,7 @@ const StepEditor: React.FC<StepEditorProps> = ({
                   src={step.imageUrl} 
                   alt={step.title || 'Изображение'} 
                   className="max-w-full h-auto rounded border border-slate-600 block"
-                  style={{ maxHeight: 'none' }}
+                  style={{ objectFit: 'contain' }}
                 />
               </div>
               {step.content && (
@@ -227,11 +245,20 @@ const StepEditor: React.FC<StepEditorProps> = ({
               )}
             </div>
           ) : step.type === 'code' ? (
-            <div className="bg-slate-900 rounded border border-slate-700 p-3 overflow-x-auto">
+            <div className="bg-slate-900 rounded border border-slate-700 p-3 overflow-x-auto relative">
               {step.language && (
                 <div className="text-xs text-slate-400 mb-2">{step.language}</div>
               )}
-              <pre className="text-xs sm:text-sm text-green-400 overflow-x-auto whitespace-pre-wrap break-words">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleCopyCode}
+                className="absolute top-2 right-2 text-slate-400 hover:text-white p-1 h-8 w-8"
+                title="Копировать код"
+              >
+                📋
+              </Button>
+              <pre className="text-xs sm:text-sm text-green-400 overflow-x-auto whitespace-pre-wrap break-words pr-10">
                 <code>{step.content}</code>
               </pre>
             </div>
@@ -261,8 +288,17 @@ const StepEditor: React.FC<StepEditorProps> = ({
                   dangerouslySetInnerHTML={{ __html: step.content }}
                 />
               ) : (
-                <div className="bg-slate-900 rounded border border-slate-700 p-3 overflow-x-auto">
-                  <pre className="text-xs sm:text-sm text-green-400 whitespace-pre-wrap break-words">
+                <div className="bg-slate-900 rounded border border-slate-700 p-3 overflow-x-auto relative">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleCopyCode}
+                    className="absolute top-2 right-2 text-slate-400 hover:text-white p-1 h-8 w-8"
+                    title="Копировать HTML"
+                  >
+                    📋
+                  </Button>
+                  <pre className="text-xs sm:text-sm text-green-400 whitespace-pre-wrap break-words pr-10">
                     <code>{step.content}</code>
                   </pre>
                 </div>
