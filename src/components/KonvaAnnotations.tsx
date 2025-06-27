@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Stage, Layer, Image as KonvaImage, Rect, Circle, Line } from 'react-konva';
+import { Stage, Layer, Image as KonvaImage, Rect, Circle, Line, Arrow } from 'react-konva';
 import useImage from '../hooks/use-image';
 import { Button } from '@/components/ui/button';
 
@@ -19,10 +19,13 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
   ({ imageUrl, width = 800, height = 500 }, ref) => {
     const [image] = useImage(imageUrl);
     const [annotations, setAnnotations] = useState<any[]>([]);
-    const [tool, setTool] = useState<'select' | 'rect' | 'circle' | 'pen'>('select');
+    const [tool, setTool] = useState<'select' | 'rect' | 'circle' | 'pen' | 'arrow'>('select');
+    const [color, setColor] = useState('#ff0000');
     const [isDrawing, setIsDrawing] = useState(false);
     const [currentPath, setCurrentPath] = useState<number[]>([]);
     const stageRef = useRef(null);
+
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#000000'];
 
     useImperativeHandle(ref, () => ({
       getAnnotatedImage: () => {
@@ -54,7 +57,7 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
           width: 0,
           height: 0,
           fill: 'transparent',
-          stroke: 'red',
+          stroke: color,
           strokeWidth: 2,
           id: Date.now(),
           type: 'rect'
@@ -66,12 +69,22 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
           y: pos.y,
           radius: 0,
           fill: 'transparent',
-          stroke: 'red',
+          stroke: color,
           strokeWidth: 2,
           id: Date.now(),
           type: 'circle'
         };
         setAnnotations([...annotations, newCircle]);
+      } else if (tool === 'arrow') {
+        const newArrow = {
+          points: [pos.x, pos.y, pos.x, pos.y],
+          stroke: color,
+          strokeWidth: 3,
+          fill: color,
+          id: Date.now(),
+          type: 'arrow'
+        };
+        setAnnotations([...annotations, newArrow]);
       } else if (tool === 'pen') {
         setCurrentPath([pos.x, pos.y]);
       }
@@ -97,6 +110,8 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
             Math.pow(point.x - lastAnnotation.x, 2) + Math.pow(point.y - lastAnnotation.y, 2)
           );
           lastAnnotation.radius = radius;
+        } else if (tool === 'arrow') {
+          lastAnnotation.points = [lastAnnotation.points[0], lastAnnotation.points[1], point.x, point.y];
         }
 
         setAnnotations(newAnnotations);
@@ -107,7 +122,7 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
       if (tool === 'pen' && currentPath.length > 0) {
         const newLine = {
           points: currentPath,
-          stroke: 'red',
+          stroke: color,
           strokeWidth: 2,
           id: Date.now(),
           type: 'line'
@@ -120,62 +135,97 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
 
     return (
       <div className="space-y-4">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => setTool('select')}
             variant={tool === 'select' ? 'default' : 'outline'}
             size="sm"
+            className="min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
           >
-            Выбор
+            <span className="hidden sm:inline">Выбор</span>
+            <span className="sm:hidden">✋</span>
           </Button>
           <Button
             onClick={() => setTool('rect')}
             variant={tool === 'rect' ? 'default' : 'outline'}
             size="sm"
+            className="min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
           >
-            Прямоугольник
+            <span className="hidden sm:inline">□</span>
+            <span className="sm:hidden">□</span>
           </Button>
           <Button
             onClick={() => setTool('circle')}
             variant={tool === 'circle' ? 'default' : 'outline'}
             size="sm"
+            className="min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
           >
-            Круг
+            <span className="hidden sm:inline">○</span>
+            <span className="sm:hidden">○</span>
+          </Button>
+          <Button
+            onClick={() => setTool('arrow')}
+            variant={tool === 'arrow' ? 'default' : 'outline'}
+            size="sm"
+            className="min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
+          >
+            <span className="hidden sm:inline">→</span>
+            <span className="sm:hidden">→</span>
           </Button>
           <Button
             onClick={() => setTool('pen')}
             variant={tool === 'pen' ? 'default' : 'outline'}
             size="sm"
+            className="min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
           >
-            Рисование
+            <span className="hidden sm:inline">✏️</span>
+            <span className="sm:hidden">✏️</span>
           </Button>
           <Button
             onClick={() => setAnnotations([])}
             variant="outline"
             size="sm"
-            className="border-red-600 text-red-400"
+            className="border-red-600 text-red-400 min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto"
           >
-            Очистить
+            <span className="hidden sm:inline">Очистить</span>
+            <span className="sm:hidden">🗑️</span>
           </Button>
         </div>
+
+        <div className="flex flex-wrap gap-2">
+          <span className="text-sm text-slate-300 self-center">Цвет:</span>
+          {colors.map((clr) => (
+            <button
+              key={clr}
+              onClick={() => setColor(clr)}
+              className={`w-8 h-8 sm:w-6 sm:h-6 rounded border-2 ${
+                color === clr ? 'border-white' : 'border-slate-600'
+              } min-w-[44px] min-h-[44px] sm:min-w-auto sm:min-h-auto`}
+              style={{ backgroundColor: clr }}
+            />
+          ))}
+        </div>
         
-        <div className="border border-slate-600 rounded-lg p-4 bg-slate-900">
+        <div className="border border-slate-600 rounded-lg p-4 bg-slate-900 overflow-x-auto">
           <Stage
-            width={width}
-            height={height}
+            width={Math.min(width, window.innerWidth - 100)}
+            height={Math.min(height, window.innerHeight - 300)}
             ref={stageRef}
             onMouseDown={handleMouseDown}
             onMousemove={handleMouseMove}
             onMouseup={handleMouseUp}
+            onTouchStart={handleMouseDown}
+            onTouchMove={handleMouseMove}
+            onTouchEnd={handleMouseUp}
           >
             <Layer>
               {image && (
                 <KonvaImage
                   image={image}
-                  width={width}
-                  height={height}
-                  scaleX={width / (image.width || width)}
-                  scaleY={height / (image.height || height)}
+                  width={Math.min(width, window.innerWidth - 100)}
+                  height={Math.min(height, window.innerHeight - 300)}
+                  scaleX={Math.min(width, window.innerWidth - 100) / (image.width || width)}
+                  scaleY={Math.min(height, window.innerHeight - 300) / (image.height || height)}
                 />
               )}
               
@@ -205,6 +255,18 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
                       strokeWidth={annotation.strokeWidth}
                     />
                   );
+                } else if (annotation.type === 'arrow') {
+                  return (
+                    <Arrow
+                      key={annotation.id}
+                      points={annotation.points}
+                      stroke={annotation.stroke}
+                      strokeWidth={annotation.strokeWidth}
+                      fill={annotation.fill}
+                      pointerLength={10}
+                      pointerWidth={10}
+                    />
+                  );
                 } else if (annotation.type === 'line') {
                   return (
                     <Line
@@ -224,7 +286,7 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
               {tool === 'pen' && currentPath.length > 0 && (
                 <Line
                   points={currentPath}
-                  stroke="red"
+                  stroke={color}
                   strokeWidth={2}
                   tension={0.5}
                   lineCap="round"

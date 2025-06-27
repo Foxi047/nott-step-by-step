@@ -17,7 +17,7 @@ interface MainAreaProps {
   instructionDescription: string;
   onDescriptionChange: (description: string) => void;
   onPreview: () => void;
-  onImageUpload?: () => void;
+  onEditImage?: (stepId: string) => void;
 }
 
 const MainArea: React.FC<MainAreaProps> = ({
@@ -28,11 +28,8 @@ const MainArea: React.FC<MainAreaProps> = ({
   instructionDescription,
   onDescriptionChange,
   onPreview,
-  onImageUpload
+  onEditImage
 }) => {
-  const [showImageEditor, setShowImageEditor] = useState(false);
-  const [editingImageStepId, setEditingImageStepId] = useState<string | null>(null);
-
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
@@ -65,62 +62,23 @@ const MainArea: React.FC<MainAreaProps> = ({
     onStepsChange([...steps, newStep]);
   };
 
-  const handleImageSave = (imageUrl: string, stepId?: string) => {
-    if (stepId) {
-      const updatedSteps = steps.map(step => 
-        step.id === stepId ? { ...step, imageUrl } : step
-      );
-      onStepsChange(updatedSteps);
-    } else {
-      const newStep: Step = {
-        id: Date.now().toString(),
-        type: 'image',
-        content: '',
-        imageUrl,
-        title: 'Новое изображение'
-      };
-      onStepsChange([...steps, newStep]);
-    }
-    setShowImageEditor(false);
-    setEditingImageStepId(null);
-    toast.success('Изображение добавлено');
-  };
-
-  // Открытие редактора изображений для новых изображений
-  React.useEffect(() => {
-    if (onImageUpload) {
-      setShowImageEditor(true);
-    }
-  }, []);
-
   return (
-    <div className="flex-1 overflow-auto" style={{ background: 'var(--bg-primary)' }}>
-      {showImageEditor && (
-        <ImageEditor
-          onSave={handleImageSave}
-          onCancel={() => {
-            setShowImageEditor(false);
-            setEditingImageStepId(null);
-          }}
-          stepId={editingImageStepId}
-        />
-      )}
-      
-      <div className="p-6 max-w-4xl mx-auto">
+    <div className="flex-1 overflow-auto px-4 pt-16 md:pt-0 md:px-0" style={{ background: 'var(--bg-primary)' }}>
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
             <Input
               placeholder="Название инструкции"
               value={instructionTitle}
               onChange={(e) => onTitleChange(e.target.value)}
-              className="text-2xl font-bold bg-transparent border-none px-0 focus-visible:ring-0 flex-1 placeholder:opacity-60"
+              className="text-xl sm:text-2xl font-bold bg-transparent border-none px-0 focus-visible:ring-0 flex-1 placeholder:opacity-60"
               style={{ 
                 color: 'var(--text-primary)'
               }}
             />
             <Button
               onClick={onPreview}
-              className="bg-green-600 hover:bg-green-700 ml-4"
+              className="bg-green-600 hover:bg-green-700 min-w-[44px] min-h-[44px] w-full sm:w-auto"
             >
               <Eye className="w-4 h-4 mr-2" />
               Предпросмотр
@@ -143,12 +101,12 @@ const MainArea: React.FC<MainAreaProps> = ({
 
         {steps.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">📝</div>
-            <h3 className="text-xl font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
+            <div className="text-4xl sm:text-6xl mb-4">📝</div>
+            <h3 className="text-lg sm:text-xl font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
               Начните создание инструкции
             </h3>
-            <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
-              Добавьте первый шаг, используя панель слева
+            <p className="mb-4 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
+              Добавьте первый шаг, используя панель слева или кнопку меню
             </p>
           </div>
         ) : (
@@ -166,7 +124,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          className={`transition-transform ${
+                          className={`transition-transform w-full ${
                             snapshot.isDragging ? 'rotate-2 scale-105' : ''
                           }`}
                         >
@@ -175,6 +133,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                             onUpdate={updateStep}
                             onDelete={deleteStep}
                             onCopy={copyStep}
+                            onEditImage={onEditImage}
                             dragHandleProps={provided.dragHandleProps}
                           />
                         </div>
@@ -190,7 +149,7 @@ const MainArea: React.FC<MainAreaProps> = ({
 
         {steps.length > 0 && (
           <div className="mt-8 text-center">
-            <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <div className="text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
               Всего шагов: {steps.length}
             </div>
           </div>

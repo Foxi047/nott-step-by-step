@@ -19,81 +19,85 @@ const Index = () => {
   const [showSavedProjects, setShowSavedProjects] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
+  const [editingImageStepId, setEditingImageStepId] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{title: string, description: string, steps: Step[]} | null>(null);
   
   const { saveInstruction } = useInstructionStorage();
   const { theme } = useTheme();
 
-  const handleAddStep = (type: 'text' | 'image' | 'code') => {
+  const handleAddStep = (type: 'text' | 'image' | 'code' | 'html' | 'file', fileData?: { name: string; type: string; data: string }) => {
     if (type === 'image') {
+      setEditingImageStepId(null);
       setShowImageEditor(true);
       return;
     }
 
-    const newStep: Step = {
-      id: Date.now().toString(),
-      type,
-      content: type === 'code' ? '// Введите ваш код здесь' : 'Новый шаг',
-      title: type === 'code' ? 'Код' : 'Текст',
-      language: type === 'code' ? 'javascript' : undefined
-    };
+    let newStep: Step;
+
+    if (type === 'file' && fileData) {
+      newStep = {
+        id: Date.now().toString(),
+        type: 'file',
+        content: `Прикрепленный файл: ${fileData.name}`,
+        title: fileData.name,
+        fileData: fileData.data,
+        fileName: fileData.name,
+        fileType: fileData.type
+      };
+    } else if (type === 'html') {
+      newStep = {
+        id: Date.now().toString(),
+        type: 'html',
+        content: '<p>Введите HTML код здесь</p>',
+        title: 'HTML блок'
+      };
+    } else {
+      newStep = {
+        id: Date.now().toString(),
+        type,
+        content: type === 'code' ? '// Введите ваш код здесь' : 'Новый шаг',
+        title: type === 'code' ? 'Код' : type === 'html' ? 'HTML' : 'Текст',
+        language: type === 'code' ? 'javascript' : undefined
+      };
+    }
     
     setSteps(prev => [...prev, newStep]);
-    toast.success(`Добавлен новый шаг: ${type === 'text' ? 'Текст' : 'Код'}`);
-  };
-
-  const handleImageSave = (imageUrl: string) => {
-    const newStep: Step = {
-      id: Date.now().toString(),
-      type: 'image',
-      content: '',
-      imageUrl,
-      title: 'Новое изображение'
+    const typeNames: Record<string, string> = {
+      text: 'Текст',
+      code: 'Код',
+      html: 'HTML-блок',
+      file: 'Файл'
     };
-    
-    setSteps(prev => [...prev, newStep]);
-    setShowImageEditor(false);
-    toast.success('Изображение добавлено');
+    toast.success(`Добавлен новый шаг: ${typeNames[type] || type}`);
   };
 
-  const handleAddStepTemplate = (template: string) => {
-    if (template === 'image-text') {
-      const imageStep: Step = {
+  const handleEditImage = (stepId: string) => {
+    setEditingImageStepId(stepId);
+    setShowImageEditor(true);
+  };
+
+  const handleImageSave = (imageUrl: string, stepId?: string) => {
+    if (stepId) {
+      // Редактирование существующего изображения
+      const updatedSteps = steps.map(step => 
+        step.id === stepId ? { ...step, imageUrl } : step
+      );
+      setSteps(updatedSteps);
+      toast.success('Изображение обновлено');
+    } else {
+      // Добавление нового изображения
+      const newStep: Step = {
         id: Date.now().toString(),
         type: 'image',
-        content: 'Описание изображения',
-        title: 'Изображение',
+        content: '',
+        imageUrl,
+        title: 'Новое изображение'
       };
-      const textStep: Step = {
-        id: (Date.now() + 1).toString(),
-        type: 'text',
-        content: 'Объяснение к изображению',
-        title: 'Пояснение',
-      };
-      setSteps(prev => [...prev, imageStep, textStep]);
-      toast.success('Добавлен шаблон: Изображение + текст');
-    } else if (template === 'code-explanation') {
-      const codeStep: Step = {
-        id: Date.now().toString(),
-        type: 'code',
-        content: '// Пример кода\nconsole.log("Hello, World!");',
-        title: 'Пример кода',
-        language: 'javascript'
-      };
-      const textStep: Step = {
-        id: (Date.now() + 1).toString(),
-        type: 'text',
-        content: 'Объяснение работы кода',
-        title: 'Объяснение',
-      };
-      setSteps(prev => [...prev, codeStep, textStep]);
-      toast.success('Добавлен шаблон: Код + объяснение');
+      setSteps(prev => [...prev, newStep]);
+      toast.success('Изображение добавлено');
     }
-  };
-
-  const handleLoadImage = () => {
-    // Будет обработано в MainArea через ImageEditor
-    toast.info('Выберите изображение для загрузки');
+    setShowImageEditor(false);
+    setEditingImageStepId(null);
   };
 
   const handlePasteImage = async () => {
@@ -151,7 +155,6 @@ const Index = () => {
       return;
     }
     
-    // Save instruction without the theme parameter for now
     const success = saveInstruction(instructionTitle, instructionDescription, steps);
     if (success) {
       toast.success(`Инструкция сохранена с темой: ${selectedTheme === 'light' ? 'Светлая' : selectedTheme === 'gray' ? 'Серая' : 'Тёмная'}`);
@@ -246,7 +249,11 @@ const Index = () => {
       {showImageEditor && (
         <ImageEditor
           onSave={handleImageSave}
-          onCancel={() => setShowImageEditor(false)}
+          onCancel={() => {
+            setShowImageEditor(false);
+            setEditingImageStepId(null);
+          }}
+          stepId={editingImageStepId}
         />
       )}
       
@@ -258,7 +265,6 @@ const Index = () => {
         onExport={handleExport}
         onOpenSettings={() => setShowSettings(true)}
         onOpenSavedProjects={() => setShowSavedProjects(true)}
-        onAddStepTemplate={handleAddStepTemplate}
       />
       
       <MainArea
@@ -269,6 +275,7 @@ const Index = () => {
         instructionDescription={instructionDescription}
         onDescriptionChange={setInstructionDescription}
         onPreview={handlePreviewCurrent}
+        onEditImage={handleEditImage}
       />
     </div>
   );
