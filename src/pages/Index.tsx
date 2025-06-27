@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import MainArea from '../components/MainArea';
@@ -51,13 +52,21 @@ const Index = () => {
         content: '<p>Введите HTML код здесь</p>',
         title: 'HTML блок'
       };
-    } else {
+    } else if (type === 'code') {
       newStep = {
         id: Date.now().toString(),
-        type,
-        content: type === 'code' ? '// Введите ваш код здесь' : 'Новый шаг',
-        title: type === 'code' ? 'Код' : type === 'html' ? 'HTML' : 'Текст',
-        language: type === 'code' ? 'javascript' : undefined
+        type: 'code',
+        content: '// Введите ваш код здесь',
+        title: 'Код',
+        language: 'javascript'
+      };
+    } else {
+      // type === 'text'
+      newStep = {
+        id: Date.now().toString(),
+        type: 'text',
+        content: 'Новый шаг',
+        title: 'Текст'
       };
     }
     
