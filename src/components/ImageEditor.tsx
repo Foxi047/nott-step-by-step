@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Upload, Crop, Save, X, RotateCw, Scissors, Palette } from 'lucide-react';
@@ -10,19 +10,28 @@ interface ImageEditorProps {
   onSave: (imageUrl: string, stepId?: string) => void;
   onCancel: () => void;
   stepId?: string | null;
+  initialImageUrl?: string;
 }
 
 const ImageEditor: React.FC<ImageEditorProps> = ({
   onSave,
   onCancel,
-  stepId
+  stepId,
+  initialImageUrl
 }) => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(initialImageUrl || null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editMode, setEditMode] = useState<'crop' | 'konva'>('crop');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cropperRef = useRef<CropperCanvasRef>(null);
   const konvaRef = useRef<KonvaAnnotationsRef>(null);
+
+  // Загружаем начальное изображение при монтировании компонента
+  useEffect(() => {
+    if (initialImageUrl) {
+      setSelectedImage(initialImageUrl);
+    }
+  }, [initialImageUrl]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -97,14 +106,21 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     }
 
     onSave(selectedImage, stepId || undefined);
-    toast.success('Изображение сохранено');
+    
+    if (stepId) {
+      toast.success('Изображение обновлено');
+    } else {
+      toast.success('Изображение сохранено');
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-slate-800 rounded-lg p-6 max-w-6xl w-full mx-4 max-h-[90vh] overflow-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white">Продвинутый редактор изображений</h2>
+          <h2 className="text-xl font-bold text-white">
+            {stepId ? 'Редактирование изображения' : 'Продвинутый редактор изображений'}
+          </h2>
           <Button
             variant="ghost"
             onClick={onCancel}
@@ -116,20 +132,24 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
 
         <div className="space-y-4">
           <div className="flex gap-2">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              accept="image/*"
-              className="hidden"
-            />
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Выбрать изображение
-            </Button>
+            {!stepId && (
+              <>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Выбрать изображение
+                </Button>
+              </>
+            )}
 
             {selectedImage && (
               <>
@@ -208,7 +228,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  Сохранить изображение
+                  {stepId ? 'Обновить изображение' : 'Сохранить изображение'}
                 </Button>
               </div>
             </div>

@@ -79,6 +79,7 @@ const Index = () => {
   };
 
   const handleEditImage = (stepId: string) => {
+    const step = steps.find(s => s.id === stepId);
     setEditingImageStepId(stepId);
     setShowImageEditor(true);
   };
@@ -262,6 +263,7 @@ const Index = () => {
             setEditingImageStepId(null);
           }}
           stepId={editingImageStepId}
+          initialImageUrl={editingImageStepId ? steps.find(s => s.id === editingImageStepId)?.imageUrl : undefined}
         />
       )}
 
