@@ -132,6 +132,24 @@ const MainArea: React.FC<MainAreaProps> = ({
     }
   };
 
+  const handleDeleteStep = (stepId: string) => {
+    // Remove from all groups first
+    groups.forEach(group => {
+      if (group.steps.some(step => step.id === stepId)) {
+        const newSteps = group.steps.filter(step => step.id !== stepId);
+        onUpdateGroup(group.id, { steps: newSteps });
+      }
+    });
+    
+    // Remove from ungrouped steps
+    const newUngroupedSteps = ungroupedSteps.filter(step => step.id !== stepId);
+    const allGroupedSteps = groups.flatMap(g => g.steps.filter(step => step.id !== stepId));
+    onStepsChange([...allGroupedSteps, ...newUngroupedSteps]);
+    
+    // Call the parent delete handler
+    onDeleteStep(stepId);
+  };
+
   const totalSteps = groups.reduce((sum, group) => sum + group.steps.length, 0) + ungroupedSteps.length;
 
   return (
@@ -222,7 +240,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                   onUpdateGroup={onUpdateGroup}
                   onDeleteGroup={onDeleteGroup}
                   onUpdateStep={onUpdateStep}
-                  onDeleteStep={onDeleteStep}
+                  onDeleteStep={handleDeleteStep}
                   onCopyStep={onCopyStep}
                   onEditImage={onEditImage}
                 />
@@ -251,7 +269,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                                 <StepEditor
                                   step={step}
                                   onUpdate={onUpdateStep}
-                                  onDelete={onDeleteStep}
+                                  onDelete={handleDeleteStep}
                                   onCopy={onCopyStep}
                                   onEditImage={onEditImage}
                                   dragHandleProps={provided.dragHandleProps}

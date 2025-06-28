@@ -23,7 +23,12 @@ const CropperCanvas = forwardRef<CropperCanvasRef, CropperCanvasProps>(
       getCroppedImage: () => {
         if (!cropperRef.current) return null;
         try {
-          const canvas = cropperRef.current.getCroppedCanvas();
+          const canvas = cropperRef.current.getCroppedCanvas({
+            width: 800,
+            height: 600,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+          });
           return canvas ? canvas.toDataURL('image/jpeg', 0.9) : null;
         } catch (error) {
           console.error('Error getting cropped image:', error);
@@ -63,6 +68,22 @@ const CropperCanvas = forwardRef<CropperCanvasRef, CropperCanvasProps>(
           cropBoxMovable: true,
           cropBoxResizable: true,
           toggleDragModeOnDblclick: false,
+          autoCropArea: 0.8,
+          viewMode: 1,
+          responsive: true,
+          restore: false,
+          checkCrossOrigin: false,
+          checkOrientation: false,
+          modal: true,
+          background: true,
+          movable: true,
+          rotatable: true,
+          scalable: true,
+          zoomable: true,
+          zoomOnTouch: true,
+          zoomOnWheel: true,
+          wheelZoomRatio: 0.1,
+          cropBoxResizable: true,
         });
       }
 
@@ -79,13 +100,18 @@ const CropperCanvas = forwardRef<CropperCanvasRef, CropperCanvasProps>(
         <div className="mb-2 text-sm text-slate-300">
           Выделите область для обрезки и нажмите "Применить обрезку"
         </div>
-        <img
-          ref={imageRef}
-          src={imageUrl}
-          alt="Редактируемое изображение"
-          className="max-w-full h-auto block"
-          style={{ maxHeight: '500px' }}
-        />
+        <div className="max-w-full overflow-hidden">
+          <img
+            ref={imageRef}
+            src={imageUrl}
+            alt="Редактируемое изображение"
+            className="max-w-full h-auto block object-contain"
+            style={{ 
+              maxHeight: '500px',
+              width: 'auto'
+            }}
+          />
+        </div>
       </div>
     );
   }

@@ -33,14 +33,18 @@ export const useStepGroups = () => {
   }, [groups]);
 
   const addStepToGroup = useCallback((step: Step, groupId?: string) => {
+    const stepWithGroup = { ...step, groupId };
+    
     if (groupId) {
       setGroups(prev => prev.map(group => 
         group.id === groupId 
-          ? { ...group, steps: [...group.steps, { ...step, groupId }] }
+          ? { ...group, steps: [...group.steps, stepWithGroup] }
           : group
       ));
+      // Remove from ungrouped steps if it was there
+      setUngroupedSteps(prev => prev.filter(s => s.id !== step.id));
     } else {
-      setUngroupedSteps(prev => [...prev, { ...step, groupId: undefined }]);
+      setUngroupedSteps(prev => [...prev.filter(s => s.id !== step.id), stepWithGroup]);
     }
   }, []);
 
@@ -95,6 +99,20 @@ export const useStepGroups = () => {
     return [...groupedSteps, ...ungroupedSteps];
   }, [groups, ungroupedSteps]);
 
+  const getStepById = useCallback((stepId: string) => {
+    // Search in ungrouped steps first
+    const ungroupedStep = ungroupedSteps.find(s => s.id === stepId);
+    if (ungroupedStep) return ungroupedStep;
+    
+    // Search in groups
+    for (const group of groups) {
+      const step = group.steps.find(s => s.id === stepId);
+      if (step) return step;
+    }
+    
+    return null;
+  }, [groups, ungroupedSteps]);
+
   return {
     groups,
     ungroupedSteps,
@@ -106,6 +124,7 @@ export const useStepGroups = () => {
     addStepToGroup,
     moveStepBetweenGroups,
     removeStepFromEverywhere,
-    getAllSteps
+    getAllSteps,
+    getStepById
   };
 };

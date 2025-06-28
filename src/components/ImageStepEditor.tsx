@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { EditIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,8 +16,12 @@ const ImageStepEditor: React.FC<ImageStepEditorProps> = ({ step, onEditImage }) 
         <img 
           src={step.imageUrl} 
           alt={step.title || 'Изображение'} 
-          className="max-w-full h-auto rounded border border-slate-600 block"
-          style={{ objectFit: 'contain' }}
+          className="max-w-full h-auto object-contain rounded border border-slate-600 block"
+          style={{ 
+            objectFit: 'contain',
+            maxHeight: '500px',
+            width: 'auto'
+          }}
         />
         {onEditImage && (
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
