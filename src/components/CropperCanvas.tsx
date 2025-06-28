@@ -104,10 +104,11 @@ const CropperCanvas = forwardRef<CropperCanvasRef, CropperCanvasProps>(
             ref={imageRef}
             src={imageUrl}
             alt="Редактируемое изображение"
-            className="max-w-full h-auto block object-contain"
+            className="max-w-full h-auto block"
             style={{ 
               maxHeight: '500px',
-              width: 'auto'
+              width: 'auto',
+              objectFit: 'contain'
             }}
           />
         </div>

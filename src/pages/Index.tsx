@@ -39,8 +39,10 @@ const Index = () => {
     updateGroup, 
     deleteGroup, 
     addStepToGroup,
+    updateStepInGroup,
     getAllSteps,
-    setUngroupedSteps
+    setUngroupedSteps,
+    getStepById
   } = useStepGroups();
   const { loadAutosave, clearAutosave } = useAutosave(instructionTitle, instructionDescription, getAllSteps());
 
@@ -53,6 +55,10 @@ const Index = () => {
         setInstructionTitle(autosaved.title);
         setInstructionDescription(autosaved.description);
         setSteps(autosaved.steps);
+        // Разделяем шаги на группированные и неформированные
+        const groupedSteps = autosaved.steps.filter(step => step.groupId);
+        const unGroupedSteps = autosaved.steps.filter(step => !step.groupId);
+        setUngroupedSteps(unGroupedSteps);
         toast.success('Автосохранение восстановлено');
       }
     }
@@ -105,35 +111,22 @@ const Index = () => {
     toast.success(`Добавлен новый шаг: ${typeNames[type] || type}`);
   };
 
-  const handleAddHtmlWithTemplate = () => {
-    setShowHtmlTemplateSelector(true);
-  };
-
-  const handleSelectHtmlTemplate = (htmlContent: string, title: string) => {
-    const newStep: Step = {
-      id: Date.now().toString(),
-      type: 'html',
-      content: htmlContent,
-      title: title
-    };
-    
-    setSteps(prev => [...prev, newStep]);
-    setUngroupedSteps(prev => [...prev, newStep]);
-    setShowHtmlTemplateSelector(false);
-    toast.success(`Добавлен HTML-блок: ${title}`);
+  const handleUpdateStep = (updatedStep: Step) => {
+    updateStep(updatedStep);
+    updateStepInGroup(updatedStep);
   };
 
   const handleEditImage = (stepId: string) => {
-    const step = steps.find(s => s.id === stepId);
     setEditingImageStepId(stepId);
     setShowImageEditor(true);
   };
 
   const handleImageSave = (imageUrl: string, stepId?: string) => {
     if (stepId) {
-      const step = steps.find(s => s.id === stepId);
+      const step = getStepById(stepId);
       if (step) {
-        updateStep({ ...step, imageUrl });
+        const updatedStep = { ...step, imageUrl };
+        handleUpdateStep(updatedStep);
         toast.success('Изображение обновлено');
       }
     } else {
@@ -145,6 +138,7 @@ const Index = () => {
         title: 'Новое изображение'
       };
       setSteps(prev => [...prev, newStep]);
+      setUngroupedSteps(prev => [...prev, newStep]);
       toast.success('Изображение добавлено');
     }
     setShowImageEditor(false);
@@ -179,6 +173,7 @@ const Index = () => {
         };
         
         setSteps(prev => [...prev, newStep]);
+        setUngroupedSteps(prev => [...prev, newStep]);
         toast.success('Изображение добавлено из буфера обмена');
       }
     } catch (error) {
@@ -291,10 +286,9 @@ const Index = () => {
           setInstructionDescription(jsonData.description || '');
           setSteps(jsonData.steps);
           
-          if (jsonData.groups) {
-            // Handle groups if they exist
-            console.log('Groups data:', jsonData.groups);
-          }
+          // Разделяем шаги на группированные и неформированные
+          const unGroupedSteps = jsonData.steps.filter((step: Step) => !step.groupId);
+          setUngroupedSteps(unGroupedSteps);
           
           clearAutosave();
           toast.success('Инструкция импортирована');
@@ -312,6 +306,9 @@ const Index = () => {
     setInstructionTitle(title);
     setInstructionDescription(description);
     setSteps(projectSteps);
+    // Разделяем шаги на группированные и неформированные
+    const unGroupedSteps = projectSteps.filter(step => !step.groupId);
+    setUngroupedSteps(unGroupedSteps);
     clearAutosave();
     toast.success('Проект загружен');
   };
@@ -323,12 +320,27 @@ const Index = () => {
   };
 
   const handlePreviewCurrent = () => {
-    if (steps.length === 0) {
+    const allSteps = getAllSteps();
+    if (allSteps.length === 0) {
       toast.error('Нет шагов для предпросмотра');
       return;
     }
-    setPreviewData({ title: instructionTitle, description: instructionDescription, steps });
+    setPreviewData({ title: instructionTitle, description: instructionDescription, steps: allSteps });
     setShowPreview(true);
+  };
+
+  const handleSelectHtmlTemplate = (htmlContent: string, title: string) => {
+    const newStep: Step = {
+      id: Date.now().toString(),
+      type: 'html',
+      content: htmlContent,
+      title: title
+    };
+    
+    setSteps(prev => [...prev, newStep]);
+    setUngroupedSteps(prev => [...prev, newStep]);
+    setShowHtmlTemplateSelector(false);
+    toast.success(`Добавлен HTML-блок: ${title}`);
   };
 
   return (
@@ -366,7 +378,7 @@ const Index = () => {
             setEditingImageStepId(null);
           }}
           stepId={editingImageStepId}
-          initialImageUrl={editingImageStepId ? steps.find(s => s.id === editingImageStepId)?.imageUrl : undefined}
+          initialImageUrl={editingImageStepId ? getStepById(editingImageStepId)?.imageUrl : undefined}
         />
       )}
 
@@ -412,17 +424,9 @@ const Index = () => {
         onTitleChange={setInstructionTitle}
         instructionDescription={instructionDescription}
         onDescriptionChange={setInstructionDescription}
-        onPreview={() => {
-          const allSteps = getAllSteps();
-          if (allSteps.length === 0) {
-            toast.error('Нет шагов для предпросмотра');
-            return;
-          }
-          setPreviewData({ title: instructionTitle, description: instructionDescription, steps: allSteps });
-          setShowPreview(true);
-        }}
+        onPreview={handlePreviewCurrent}
         onEditImage={handleEditImage}
-        onUpdateStep={updateStep}
+        onUpdateStep={handleUpdateStep}
         onDeleteStep={deleteStep}
         onCopyStep={copyStep}
       />

@@ -40,15 +40,15 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
   };
 
   return (
-    <div className="bg-slate-700 rounded-lg p-4 mb-4 border border-slate-600">
+    <div className="bg-slate-700/50 rounded-lg p-4 mb-4 border-2 border-purple-600/30 shadow-lg">
       <Collapsible open={!group.isCollapsed}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <CollapsibleTrigger onClick={handleToggleCollapse}>
               {group.isCollapsed ? (
-                <ChevronRight className="w-4 h-4 text-slate-400" />
+                <ChevronRight className="w-4 h-4 text-purple-400" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-slate-400" />
+                <ChevronDown className="w-4 h-4 text-purple-400" />
               )}
             </CollapsibleTrigger>
             
@@ -65,7 +65,13 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
                 </Button>
               </div>
             ) : (
-              <h3 className="text-lg font-semibold text-white">{group.title}</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📁</span>
+                <h3 className="text-lg font-semibold text-purple-200">{group.title}</h3>
+                <span className="text-xs text-purple-300 bg-purple-800/30 px-2 py-1 rounded">
+                  {group.steps.length} шагов
+                </span>
+              </div>
             )}
           </div>
 
@@ -91,11 +97,13 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
 
         <CollapsibleContent>
           <Droppable droppableId={`group-${group.id}`} type="step">
-            {(provided) => (
+            {(provided, snapshot) => (
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className="space-y-4"
+                className={`space-y-4 transition-colors rounded-lg p-2 ${
+                  snapshot.isDraggingOver ? 'bg-purple-900/20 border-2 border-dashed border-purple-500' : ''
+                }`}
               >
                 {group.steps.map((step, index) => (
                   <Draggable key={step.id} draggableId={step.id} index={index}>
@@ -104,7 +112,7 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         className={`transition-transform ${
-                          snapshot.isDragging ? 'rotate-2 scale-105' : ''
+                          snapshot.isDragging ? 'rotate-2 scale-105 z-50' : ''
                         }`}
                       >
                         <StepEditor
@@ -120,6 +128,13 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
                   </Draggable>
                 ))}
                 {provided.placeholder}
+                
+                {group.steps.length === 0 && (
+                  <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-600 rounded-lg">
+                    <div className="text-2xl mb-2">📋</div>
+                    <p>Перетащите шаги сюда</p>
+                  </div>
+                )}
               </div>
             )}
           </Droppable>

@@ -33,18 +33,18 @@ export const useStepGroups = () => {
   }, [groups]);
 
   const addStepToGroup = useCallback((step: Step, groupId?: string) => {
-    const stepWithGroup = { ...step, groupId };
-    
     if (groupId) {
+      // Добавляем шаг в группу
       setGroups(prev => prev.map(group => 
         group.id === groupId 
-          ? { ...group, steps: [...group.steps, stepWithGroup] }
+          ? { ...group, steps: [...group.steps, { ...step, groupId }] }
           : group
       ));
-      // Remove from ungrouped steps if it was there
+      // Удаляем из неформированных шагов
       setUngroupedSteps(prev => prev.filter(s => s.id !== step.id));
     } else {
-      setUngroupedSteps(prev => [...prev.filter(s => s.id !== step.id), stepWithGroup]);
+      // Добавляем в неформированные шаги
+      setUngroupedSteps(prev => [...prev.filter(s => s.id !== step.id), { ...step, groupId: undefined }]);
     }
   }, []);
 
@@ -81,6 +81,21 @@ export const useStepGroups = () => {
         setUngroupedSteps(prev => [...prev, { ...step, groupId: undefined }]);
       }
     }
+  }, []);
+
+  const updateStepInGroup = useCallback((updatedStep: Step) => {
+    // Обновляем шаг в группе
+    setGroups(prev => prev.map(group => ({
+      ...group,
+      steps: group.steps.map(step => 
+        step.id === updatedStep.id ? updatedStep : step
+      )
+    })));
+    
+    // Обновляем шаг в неформированных
+    setUngroupedSteps(prev => prev.map(step => 
+      step.id === updatedStep.id ? updatedStep : step
+    ));
   }, []);
 
   const removeStepFromEverywhere = useCallback((stepId: string) => {
@@ -123,6 +138,7 @@ export const useStepGroups = () => {
     deleteGroup,
     addStepToGroup,
     moveStepBetweenGroups,
+    updateStepInGroup,
     removeStepFromEverywhere,
     getAllSteps,
     getStepById
