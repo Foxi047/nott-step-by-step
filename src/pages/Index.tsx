@@ -59,19 +59,47 @@ const Index = () => {
   }, []);
 
   const handleAddStep = (type: 'text' | 'image' | 'code' | 'html' | 'file', fileData?: { name: string; type: string; data: string }) => {
+    let newStep: Step;
+
+    if (type === 'image' && fileData) {
+      newStep = {
+        id: Date.now().toString(),
+        type: 'image',
+        content: '',
+        imageUrl: fileData.data,
+        title: 'Новое изображение'
+      };
+      setSteps(prev => [...prev, newStep]);
+      setUngroupedSteps(prev => [...prev, newStep]);
+      toast.success('Изображение добавлено');
+      return;
+    }
+
     if (type === 'image') {
       setEditingImageStepId(null);
       setShowImageEditor(true);
       return;
     }
 
-    const newStep = addStep(type, fileData);
-    setUngroupedSteps(prev => [...prev, newStep]);
+    if (type === 'html') {
+      newStep = {
+        id: Date.now().toString(),
+        type: 'html',
+        content: '<p>Введите HTML код здесь</p>',
+        title: 'HTML блок'
+      };
+      setSteps(prev => [...prev, newStep]);
+      setUngroupedSteps(prev => [...prev, newStep]);
+      toast.success('HTML-блок добавлен');
+      return;
+    }
+
+    const createdStep = addStep(type, fileData);
+    setUngroupedSteps(prev => [...prev, createdStep]);
     
     const typeNames: Record<string, string> = {
       text: 'Текст',
       code: 'Код',
-      html: 'HTML-блок',
       file: 'Файл'
     };
     toast.success(`Добавлен новый шаг: ${typeNames[type] || type}`);
@@ -90,6 +118,7 @@ const Index = () => {
     };
     
     setSteps(prev => [...prev, newStep]);
+    setUngroupedSteps(prev => [...prev, newStep]);
     setShowHtmlTemplateSelector(false);
     toast.success(`Добавлен HTML-блок: ${title}`);
   };

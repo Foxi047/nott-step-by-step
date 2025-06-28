@@ -1,7 +1,8 @@
 
 import React, { useState, useRef } from 'react';
-import { Plus, Upload, Save, Download, FileText, Settings, FolderOpen, Clipboard, Code, Paperclip, Menu, X, QrCode, FileUp } from 'lucide-react';
+import { Plus, Upload, Save, Download, FileText, Settings, FolderOpen, Clipboard, Code, Paperclip, Menu, X, QrCode, FileUp, ChevronDown, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 
 interface SidebarProps {
@@ -32,6 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -48,6 +50,62 @@ const Sidebar: React.FC<SidebarProps> = ({
       toast.success('Файл добавлен');
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Пожалуйста, выберите изображение');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const imageUrl = e.target?.result as string;
+      onAddStep('image', {
+        name: file.name,
+        type: file.type,
+        data: imageUrl
+      });
+      toast.success('Изображение добавлено');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePasteImageClick = async () => {
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      const imageItems = clipboardItems.filter(item => 
+        item.types.some(type => type.startsWith('image/'))
+      );
+      
+      if (imageItems.length === 0) {
+        toast.error('В буфере обмена нет изображений');
+        return;
+      }
+
+      const imageItem = imageItems[0];
+      const imageType = imageItem.types.find(type => type.startsWith('image/'));
+      
+      if (imageType) {
+        const blob = await imageItem.getType(imageType);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          onAddStep('image', {
+            name: 'clipboard-image.png',
+            type: imageType,
+            data: imageUrl
+          });
+          toast.success('Изображение добавлено из буфера обмена');
+        };
+        reader.readAsDataURL(blob);
+      }
+    } catch (error) {
+      toast.error('Ошибка при вставке изображения из буфера обмена');
+    }
   };
 
   const SidebarContent = () => (
@@ -83,21 +141,39 @@ const Sidebar: React.FC<SidebarProps> = ({
           HTML-блок с шаблоном
         </Button>
 
-        <Button 
-          onClick={() => onAddStep('image')} 
-          className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white min-h-[44px]"
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Загрузить изображение
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white min-h-[44px]">
+              <Image className="w-4 h-4 mr-2" />
+              Добавить изображение
+              <ChevronDown className="w-4 h-4 ml-auto" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56 bg-slate-700 border-slate-600">
+            <DropdownMenuItem 
+              onClick={() => imageInputRef.current?.click()}
+              className="text-white hover:bg-slate-600 cursor-pointer"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Загрузить с устройства
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={handlePasteImageClick}
+              className="text-white hover:bg-slate-600 cursor-pointer"
+            >
+              <Clipboard className="w-4 h-4 mr-2" />
+              Из буфера обмена
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-        <Button 
-          onClick={onPasteImage} 
-          className="w-full justify-start bg-cyan-600 hover:bg-cyan-700 text-white min-h-[44px]"
-        >
-          <Clipboard className="w-4 h-4 mr-2" />
-          Из буфера обмена
-        </Button>
+        <input
+          type="file"
+          ref={imageInputRef}
+          onChange={handleImageSelect}
+          className="hidden"
+          accept="image/*"
+        />
 
         <div>
           <input
