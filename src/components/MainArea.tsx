@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Step, StepGroup } from '../types/Step';
@@ -58,10 +57,13 @@ const MainArea: React.FC<MainAreaProps> = ({
     // Handle reordering within groups or ungrouped steps
     if (source.droppableId === destination.droppableId) {
       if (source.droppableId === 'ungrouped') {
-        const newSteps = Array.from(ungroupedSteps);
-        const [reorderedItem] = newSteps.splice(source.index, 1);
-        newSteps.splice(destination.index, 0, reorderedItem);
-        onStepsChange([...groups.flatMap(g => g.steps), ...newSteps]);
+        const newUngroupedSteps = Array.from(ungroupedSteps);
+        const [reorderedItem] = newUngroupedSteps.splice(source.index, 1);
+        newUngroupedSteps.splice(destination.index, 0, reorderedItem);
+        
+        // Update all steps array
+        const allGroupedSteps = groups.flatMap(g => g.steps);
+        onStepsChange([...allGroupedSteps, ...newUngroupedSteps]);
       } else {
         const groupId = source.droppableId.replace('group-', '');
         const group = groups.find(g => g.id === groupId);
@@ -70,6 +72,50 @@ const MainArea: React.FC<MainAreaProps> = ({
           const [reorderedItem] = newSteps.splice(source.index, 1);
           newSteps.splice(destination.index, 0, reorderedItem);
           onUpdateGroup(groupId, { steps: newSteps });
+        }
+      }
+    } else {
+      // Handle moving between groups or from ungrouped to group
+      let sourceStep: Step | undefined;
+      
+      // Get the step being moved
+      if (source.droppableId === 'ungrouped') {
+        sourceStep = ungroupedSteps[source.index];
+      } else {
+        const sourceGroupId = source.droppableId.replace('group-', '');
+        const sourceGroup = groups.find(g => g.id === sourceGroupId);
+        sourceStep = sourceGroup?.steps[source.index];
+      }
+      
+      if (!sourceStep) return;
+      
+      // Remove from source
+      if (source.droppableId === 'ungrouped') {
+        const newUngroupedSteps = ungroupedSteps.filter((_, index) => index !== source.index);
+        const allGroupedSteps = groups.flatMap(g => g.steps);
+        onStepsChange([...allGroupedSteps, ...newUngroupedSteps]);
+      } else {
+        const sourceGroupId = source.droppableId.replace('group-', '');
+        const sourceGroup = groups.find(g => g.id === sourceGroupId);
+        if (sourceGroup) {
+          const newSteps = sourceGroup.steps.filter((_, index) => index !== source.index);
+          onUpdateGroup(sourceGroupId, { steps: newSteps });
+        }
+      }
+      
+      // Add to destination
+      if (destination.droppableId === 'ungrouped') {
+        const newUngroupedSteps = Array.from(ungroupedSteps);
+        newUngroupedSteps.splice(destination.index, 0, { ...sourceStep, groupId: undefined });
+        const allGroupedSteps = groups.flatMap(g => g.steps);
+        onStepsChange([...allGroupedSteps, ...newUngroupedSteps]);
+      } else {
+        const destGroupId = destination.droppableId.replace('group-', '');
+        const destGroup = groups.find(g => g.id === destGroupId);
+        if (destGroup) {
+          const newSteps = Array.from(destGroup.steps);
+          newSteps.splice(destination.index, 0, { ...sourceStep, groupId: destGroupId });
+          onUpdateGroup(destGroupId, { steps: newSteps });
         }
       }
     }

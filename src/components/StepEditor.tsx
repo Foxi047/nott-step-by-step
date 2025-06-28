@@ -86,13 +86,13 @@ const StepEditor: React.FC<StepEditorProps> = ({
     
     switch (step.style?.type) {
       case 'info':
-        return `${baseClasses} bg-blue-900 border-blue-700`;
+        return `${baseClasses} bg-blue-900/30 border-blue-700`;
       case 'warning':
-        return `${baseClasses} bg-yellow-900 border-yellow-700`;
+        return `${baseClasses} bg-yellow-900/30 border-yellow-700`;
       case 'success':
-        return `${baseClasses} bg-green-900 border-green-700`;
+        return `${baseClasses} bg-green-900/30 border-green-700`;
       case 'error':
-        return `${baseClasses} bg-red-900 border-red-700`;
+        return `${baseClasses} bg-red-900/30 border-red-700`;
       default:
         return `${baseClasses} bg-slate-800 border-slate-700`;
     }

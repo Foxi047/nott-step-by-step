@@ -11,7 +11,7 @@ interface StepStyleSelectorProps {
 const stepStyles: Array<{ type: StepStyle['type'], label: string, icon: string, classes: string }> = [
   { type: 'default', label: 'Обычный', icon: '📝', classes: 'bg-slate-800 border-slate-700' },
   { type: 'info', label: 'Информация', icon: 'ℹ️', classes: 'bg-blue-900 border-blue-700' },
-  { type: 'warning', label: 'Предупреждение', icon: '🛑', classes: 'bg-yellow-900 border-yellow-700' },
+  { type: 'warning', label: 'Предупреждение', icon: '⚠️', classes: 'bg-yellow-900 border-yellow-700' },
   { type: 'success', label: 'Успех', icon: '✅', classes: 'bg-green-900 border-green-700' },
   { type: 'error', label: 'Ошибка', icon: '❌', classes: 'bg-red-900 border-red-700' }
 ];

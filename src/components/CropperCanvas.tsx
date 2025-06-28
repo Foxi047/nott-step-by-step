@@ -76,11 +76,14 @@ const CropperCanvas = forwardRef<CropperCanvasRef, CropperCanvasProps>(
 
     return (
       <div className="border border-slate-600 rounded-lg p-4 bg-slate-900">
+        <div className="mb-2 text-sm text-slate-300">
+          Выделите область для обрезки и нажмите "Применить обрезку"
+        </div>
         <img
           ref={imageRef}
           src={imageUrl}
           alt="Редактируемое изображение"
-          className="max-w-full h-auto"
+          className="max-w-full h-auto block"
           style={{ maxHeight: '500px' }}
         />
       </div>
