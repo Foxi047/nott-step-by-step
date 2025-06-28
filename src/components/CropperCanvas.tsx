@@ -83,7 +83,6 @@ const CropperCanvas = forwardRef<CropperCanvasRef, CropperCanvasProps>(
           zoomOnTouch: true,
           zoomOnWheel: true,
           wheelZoomRatio: 0.1,
-          cropBoxResizable: true,
         });
       }
 
