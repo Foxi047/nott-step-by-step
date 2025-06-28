@@ -1,4 +1,4 @@
-import { Step } from '../components/StepEditor';
+import { Step } from '../types/Step';
 
 export const exportToHTML = (title: string, description: string, steps: Step[]): string => {
   const stepHTML = steps.map((step, index) => {

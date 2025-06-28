@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { FileIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Step } from './StepEditor';
+import { Step } from '../types/Step';
 
 interface FileStepEditorProps {
   step: Step;

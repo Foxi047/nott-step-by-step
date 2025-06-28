@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { Step } from '../components/StepEditor';
+import { Step } from '../types/Step';
 
 interface Instruction {
   id: string;

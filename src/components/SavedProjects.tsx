@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Edit, Trash2, FileText, Eye } from 'lucide-react';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
-import { Step } from './StepEditor';
+import { Step } from '../types/Step';
 import { toast } from 'sonner';
 
 interface SavedProjectsProps {

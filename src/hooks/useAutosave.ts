@@ -1,6 +1,5 @@
-
 import { useEffect, useRef } from 'react';
-import { Step } from '../components/StepEditor';
+import { Step } from '../types/Step';
 
 const AUTOSAVE_KEY = 'nott-autosave';
 const AUTOSAVE_INTERVAL = 3000; // 3 секунды
