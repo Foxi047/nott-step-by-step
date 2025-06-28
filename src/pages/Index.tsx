@@ -6,10 +6,12 @@ import SavedProjects from '../components/SavedProjects';
 import PreviewMode from '../components/PreviewMode';
 import ImageEditor from '../components/ImageEditor';
 import HtmlTemplateSelector from '../components/HtmlTemplateSelector';
-import { Step } from '../components/StepEditor';
+import QRCodeGenerator from '../components/QRCodeGenerator';
+import { Step } from '../types/Step';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
 import { useTheme, Theme } from '../hooks/useTheme';
 import { useSteps } from '../hooks/useSteps';
+import { useStepGroups } from '../hooks/useStepGroups';
 import { useAutosave } from '../hooks/useAutosave';
 import { exportToHTML, exportToMarkdown, exportToJSON, downloadFile } from '../utils/exportUtils';
 import { toast } from 'sonner';
@@ -22,13 +24,25 @@ const Index = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [showHtmlTemplateSelector, setShowHtmlTemplateSelector] = useState(false);
+  const [showQRGenerator, setShowQRGenerator] = useState(false);
   const [editingImageStepId, setEditingImageStepId] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{title: string, description: string, steps: Step[]} | null>(null);
+  const [qrUrl, setQrUrl] = useState<string>('');
   
   const { saveInstruction } = useInstructionStorage();
   const { theme } = useTheme();
   const { steps, addStep, updateStep, deleteStep, copyStep, reorderSteps, setSteps } = useSteps();
-  const { loadAutosave, clearAutosave } = useAutosave(instructionTitle, instructionDescription, steps);
+  const { 
+    groups, 
+    ungroupedSteps, 
+    createGroup, 
+    updateGroup, 
+    deleteGroup, 
+    addStepToGroup,
+    getAllSteps,
+    setUngroupedSteps
+  } = useStepGroups();
+  const { loadAutosave, clearAutosave } = useAutosave(instructionTitle, instructionDescription, getAllSteps());
 
   // Загрузка автосохранения при запуске
   useEffect(() => {
@@ -52,6 +66,8 @@ const Index = () => {
     }
 
     const newStep = addStep(type, fileData);
+    setUngroupedSteps(prev => [...prev, newStep]);
+    
     const typeNames: Record<string, string> = {
       text: 'Текст',
       code: 'Код',
@@ -142,12 +158,13 @@ const Index = () => {
   };
 
   const handleSave = () => {
-    if (steps.length === 0) {
+    const allSteps = getAllSteps();
+    if (allSteps.length === 0) {
       toast.error('Добавьте хотя бы один шаг');
       return;
     }
     
-    const success = saveInstruction(instructionTitle, instructionDescription, steps);
+    const success = saveInstruction(instructionTitle, instructionDescription, allSteps);
     if (success) {
       clearAutosave();
       toast.success('Инструкция сохранена');
@@ -157,12 +174,13 @@ const Index = () => {
   };
 
   const handleSaveWithTheme = (selectedTheme: Theme) => {
-    if (steps.length === 0) {
+    const allSteps = getAllSteps();
+    if (allSteps.length === 0) {
       toast.error('Добавьте хотя бы один шаг');
       return;
     }
     
-    const success = saveInstruction(instructionTitle, instructionDescription, steps);
+    const success = saveInstruction(instructionTitle, instructionDescription, allSteps);
     if (success) {
       clearAutosave();
       toast.success(`Инструкция сохранена с темой: ${selectedTheme === 'light' ? 'Светлая' : selectedTheme === 'gray' ? 'Серая' : 'Тёмная'}`);
@@ -172,7 +190,8 @@ const Index = () => {
   };
 
   const handleExport = (format: 'html' | 'markdown' | 'json') => {
-    if (steps.length === 0) {
+    const allSteps = getAllSteps();
+    if (allSteps.length === 0) {
       toast.error('Нет шагов для экспорта');
       return;
     }
@@ -181,28 +200,83 @@ const Index = () => {
     const baseFilename = `${instructionTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}`;
     
     try {
+      let content: string;
+      let mimeType: string;
+      let extension: string;
+      
       switch (format) {
         case 'html':
-          const htmlContent = exportToHTML(instructionTitle, instructionDescription, steps);
-          downloadFile(htmlContent, `${baseFilename}.html`, 'text/html');
+          content = exportToHTML(instructionTitle, instructionDescription, allSteps);
+          mimeType = 'text/html';
+          extension = 'html';
           break;
         
         case 'markdown':
-          const markdownContent = exportToMarkdown(instructionTitle, instructionDescription, steps);
-          downloadFile(markdownContent, `${baseFilename}.md`, 'text/markdown');
+          content = exportToMarkdown(instructionTitle, instructionDescription, allSteps);
+          mimeType = 'text/markdown';
+          extension = 'md';
           break;
         
         case 'json':
-          const jsonContent = exportToJSON(instructionTitle, instructionDescription, steps);
-          downloadFile(jsonContent, `${baseFilename}.json`, 'application/json');
+          const jsonData = {
+            title: instructionTitle,
+            description: instructionDescription,
+            steps: allSteps,
+            groups: groups,
+            exportedAt: new Date().toISOString()
+          };
+          content = JSON.stringify(jsonData, null, 2);
+          mimeType = 'application/json';
+          extension = 'json';
           break;
+          
+        default:
+          throw new Error('Неподдерживаемый формат');
       }
+      
+      downloadFile(content, `${baseFilename}.${extension}`, mimeType);
+      
+      // Create data URL for QR code
+      const blob = new Blob([content], { type: mimeType });
+      const dataUrl = URL.createObjectURL(blob);
+      setQrUrl(dataUrl);
       
       toast.success(`Экспорт в ${format.toUpperCase()} завершен`);
     } catch (error) {
       console.error('Ошибка экспорта:', error);
       toast.error('Ошибка при экспорте');
     }
+  };
+
+  const handleImportJSON = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const jsonData = JSON.parse(e.target?.result as string);
+        
+        if (jsonData.title && jsonData.steps) {
+          setInstructionTitle(jsonData.title);
+          setInstructionDescription(jsonData.description || '');
+          setSteps(jsonData.steps);
+          
+          if (jsonData.groups) {
+            // Handle groups if they exist
+            console.log('Groups data:', jsonData.groups);
+          }
+          
+          clearAutosave();
+          toast.success('Инструкция импортирована');
+        } else {
+          toast.error('Неверный формат файла');
+        }
+      } catch (error) {
+        toast.error('Ошибка при импорте файла');
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleLoadProject = (title: string, description: string, projectSteps: Step[]) => {
@@ -273,26 +347,51 @@ const Index = () => {
           onCancel={() => setShowHtmlTemplateSelector(false)}
         />
       )}
+
+      {showQRGenerator && (
+        <QRCodeGenerator
+          onClose={() => setShowQRGenerator(false)}
+          defaultUrl={qrUrl}
+        />
+      )}
       
       <Sidebar
         onAddStep={handleAddStep}
-        onAddHtmlWithTemplate={handleAddHtmlWithTemplate}
+        onAddHtmlWithTemplate={() => setShowHtmlTemplateSelector(true)}
         onLoadImage={() => setShowImageEditor(true)}
         onPasteImage={handlePasteImage}
         onSave={handleSave}
         onExport={handleExport}
+        onImportJSON={handleImportJSON}
+        onGenerateQR={() => setShowQRGenerator(true)}
         onOpenSettings={() => setShowSettings(true)}
         onOpenSavedProjects={() => setShowSavedProjects(true)}
       />
       
       <MainArea
-        steps={steps}
-        onStepsChange={reorderSteps}
+        steps={getAllSteps()}
+        groups={groups}
+        ungroupedSteps={ungroupedSteps}
+        onStepsChange={(newSteps) => {
+          setSteps(newSteps);
+          setUngroupedSteps(newSteps.filter(step => !step.groupId));
+        }}
+        onCreateGroup={createGroup}
+        onUpdateGroup={updateGroup}
+        onDeleteGroup={deleteGroup}
         instructionTitle={instructionTitle}
         onTitleChange={setInstructionTitle}
         instructionDescription={instructionDescription}
         onDescriptionChange={setInstructionDescription}
-        onPreview={handlePreviewCurrent}
+        onPreview={() => {
+          const allSteps = getAllSteps();
+          if (allSteps.length === 0) {
+            toast.error('Нет шагов для предпросмотра');
+            return;
+          }
+          setPreviewData({ title: instructionTitle, description: instructionDescription, steps: allSteps });
+          setShowPreview(true);
+        }}
         onEditImage={handleEditImage}
         onUpdateStep={updateStep}
         onDeleteStep={deleteStep}

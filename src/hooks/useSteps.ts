@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { Step } from '../components/StepEditor';
+import { Step } from '../types/Step';
 import { toast } from 'sonner';
 
 export const useSteps = () => {
@@ -10,10 +10,13 @@ export const useSteps = () => {
     let newStep: Step;
 
     if (type === 'file' && fileData) {
+      // Create proper file download link
+      const downloadLink = `<a href="${fileData.data}" download="${fileData.name}">📎 ${fileData.name}</a>`;
+      
       newStep = {
         id: Date.now().toString(),
         type: 'file',
-        content: `Прикрепленный файл: ${fileData.name}`,
+        content: downloadLink,
         title: fileData.name,
         fileData: fileData.data,
         fileName: fileData.name,

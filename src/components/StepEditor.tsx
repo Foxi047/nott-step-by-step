@@ -5,22 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { Step, StepStyle } from '../types/Step';
 import ImageStepEditor from './ImageStepEditor';
 import FileStepEditor from './FileStepEditor';
 import CodeStepEditor from './CodeStepEditor';
-
-export interface Step {
-  id: string;
-  type: 'text' | 'image' | 'code' | 'html' | 'file';
-  content: string;
-  title?: string;
-  language?: string;
-  imageUrl?: string;
-  annotations?: any[];
-  fileData?: string;
-  fileName?: string;
-  fileType?: string;
-}
+import StepStyleSelector from './StepStyleSelector';
 
 interface StepEditorProps {
   step: Step;
@@ -73,7 +62,15 @@ const StepEditor: React.FC<StepEditorProps> = ({
     }
   };
 
+  const handleStyleChange = (style: StepStyle) => {
+    onUpdate({ ...step, style });
+  };
+
   const getStepIcon = () => {
+    if (step.style?.icon) {
+      return step.style.icon;
+    }
+    
     switch (step.type) {
       case 'text': return '📝';
       case 'code': return '💻';
@@ -81,6 +78,23 @@ const StepEditor: React.FC<StepEditorProps> = ({
       case 'html': return '🌐';
       case 'file': return '📎';
       default: return '📄';
+    }
+  };
+
+  const getStepClasses = () => {
+    const baseClasses = 'border rounded-lg p-3 sm:p-4 mb-4 group hover:border-slate-600 transition-colors';
+    
+    switch (step.style?.type) {
+      case 'info':
+        return `${baseClasses} bg-blue-900 border-blue-700`;
+      case 'warning':
+        return `${baseClasses} bg-yellow-900 border-yellow-700`;
+      case 'success':
+        return `${baseClasses} bg-green-900 border-green-700`;
+      case 'error':
+        return `${baseClasses} bg-red-900 border-red-700`;
+      default:
+        return `${baseClasses} bg-slate-800 border-slate-700`;
     }
   };
 
@@ -142,7 +156,7 @@ const StepEditor: React.FC<StepEditorProps> = ({
   };
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 sm:p-4 mb-4 group hover:border-slate-600 transition-colors">
+    <div className={getStepClasses()}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing touch-manipulation">
@@ -190,6 +204,11 @@ const StepEditor: React.FC<StepEditorProps> = ({
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
             className="bg-slate-700 border-slate-600 text-white"
+          />
+          
+          <StepStyleSelector
+            currentStyle={step.style}
+            onStyleChange={handleStyleChange}
           />
           
           {step.type === 'code' && (

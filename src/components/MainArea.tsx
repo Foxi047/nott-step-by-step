@@ -1,16 +1,23 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import StepEditor, { Step } from './StepEditor';
+import { Step, StepGroup } from '../types/Step';
+import StepEditor from './StepEditor';
+import StepGroupComponent from './StepGroup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Eye } from 'lucide-react';
+import { Eye, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MainAreaProps {
   steps: Step[];
+  groups: StepGroup[];
+  ungroupedSteps: Step[];
   onStepsChange: (steps: Step[]) => void;
+  onCreateGroup: (title: string) => void;
+  onUpdateGroup: (groupId: string, updates: Partial<StepGroup>) => void;
+  onDeleteGroup: (groupId: string) => void;
   instructionTitle: string;
   onTitleChange: (title: string) => void;
   instructionDescription: string;
@@ -24,7 +31,12 @@ interface MainAreaProps {
 
 const MainArea: React.FC<MainAreaProps> = ({
   steps,
+  groups,
+  ungroupedSteps,
   onStepsChange,
+  onCreateGroup,
+  onUpdateGroup,
+  onDeleteGroup,
   instructionTitle,
   onTitleChange,
   instructionDescription,
@@ -35,16 +47,46 @@ const MainArea: React.FC<MainAreaProps> = ({
   onDeleteStep,
   onCopyStep
 }) => {
+  const [newGroupTitle, setNewGroupTitle] = useState('');
+  const [showNewGroupInput, setShowNewGroupInput] = useState(false);
+
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
-    const newSteps = Array.from(steps);
-    const [reorderedItem] = newSteps.splice(result.source.index, 1);
-    newSteps.splice(result.destination.index, 0, reorderedItem);
-
-    onStepsChange(newSteps);
+    const { source, destination } = result;
+    
+    // Handle reordering within groups or ungrouped steps
+    if (source.droppableId === destination.droppableId) {
+      if (source.droppableId === 'ungrouped') {
+        const newSteps = Array.from(ungroupedSteps);
+        const [reorderedItem] = newSteps.splice(source.index, 1);
+        newSteps.splice(destination.index, 0, reorderedItem);
+        onStepsChange([...groups.flatMap(g => g.steps), ...newSteps]);
+      } else {
+        const groupId = source.droppableId.replace('group-', '');
+        const group = groups.find(g => g.id === groupId);
+        if (group) {
+          const newSteps = Array.from(group.steps);
+          const [reorderedItem] = newSteps.splice(source.index, 1);
+          newSteps.splice(destination.index, 0, reorderedItem);
+          onUpdateGroup(groupId, { steps: newSteps });
+        }
+      }
+    }
+    
     toast.success('Порядок шагов изменен');
   };
+
+  const handleCreateGroup = () => {
+    if (newGroupTitle.trim()) {
+      onCreateGroup(newGroupTitle.trim());
+      setNewGroupTitle('');
+      setShowNewGroupInput(false);
+      toast.success('Группа создана');
+    }
+  };
+
+  const totalSteps = groups.reduce((sum, group) => sum + group.steps.length, 0) + ungroupedSteps.length;
 
   return (
     <div className="flex-1 overflow-auto px-4 pt-16 md:pt-0 md:px-0" style={{ background: 'var(--bg-primary)' }}>
@@ -83,7 +125,38 @@ const MainArea: React.FC<MainAreaProps> = ({
           />
         </div>
 
-        {steps.length === 0 ? (
+        <div className="mb-6">
+          <div className="flex gap-2 items-center">
+            {!showNewGroupInput ? (
+              <Button
+                onClick={() => setShowNewGroupInput(true)}
+                className="bg-purple-600 hover:bg-purple-700"
+                size="sm"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Создать группу
+              </Button>
+            ) : (
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="Название группы"
+                  value={newGroupTitle}
+                  onChange={(e) => setNewGroupTitle(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateGroup()}
+                  className="w-48"
+                />
+                <Button onClick={handleCreateGroup} size="sm" className="bg-green-600 hover:bg-green-700">
+                  Создать
+                </Button>
+                <Button onClick={() => setShowNewGroupInput(false)} size="sm" variant="outline">
+                  Отмена
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {totalSteps === 0 ? (
           <div className="text-center py-12">
             <div className="text-4xl sm:text-6xl mb-4">📝</div>
             <h3 className="text-lg sm:text-xl font-medium mb-2" style={{ color: 'var(--text-primary)' }}>
@@ -95,46 +168,66 @@ const MainArea: React.FC<MainAreaProps> = ({
           </div>
         ) : (
           <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="steps">
-              {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="space-y-4"
-                >
-                  {steps.map((step, index) => (
-                    <Draggable key={step.id} draggableId={step.id} index={index}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className={`transition-transform w-full ${
-                            snapshot.isDragging ? 'rotate-2 scale-105' : ''
-                          }`}
-                        >
-                          <StepEditor
-                            step={step}
-                            onUpdate={onUpdateStep}
-                            onDelete={onDeleteStep}
-                            onCopy={onCopyStep}
-                            onEditImage={onEditImage}
-                            dragHandleProps={provided.dragHandleProps}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
+            <div className="space-y-6">
+              {groups.map((group) => (
+                <StepGroupComponent
+                  key={group.id}
+                  group={group}
+                  onUpdateGroup={onUpdateGroup}
+                  onDeleteGroup={onDeleteGroup}
+                  onUpdateStep={onUpdateStep}
+                  onDeleteStep={onDeleteStep}
+                  onCopyStep={onCopyStep}
+                  onEditImage={onEditImage}
+                />
+              ))}
+
+              {ungroupedSteps.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-slate-300">Без группы</h3>
+                  <Droppable droppableId="ungrouped">
+                    {(provided) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="space-y-4"
+                      >
+                        {ungroupedSteps.map((step, index) => (
+                          <Draggable key={step.id} draggableId={step.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`transition-transform w-full ${
+                                  snapshot.isDragging ? 'rotate-2 scale-105' : ''
+                                }`}
+                              >
+                                <StepEditor
+                                  step={step}
+                                  onUpdate={onUpdateStep}
+                                  onDelete={onDeleteStep}
+                                  onCopy={onCopyStep}
+                                  onEditImage={onEditImage}
+                                  dragHandleProps={provided.dragHandleProps}
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
                 </div>
               )}
-            </Droppable>
+            </div>
           </DragDropContext>
         )}
 
-        {steps.length > 0 && (
+        {totalSteps > 0 && (
           <div className="mt-8 text-center">
             <div className="text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Всего шагов: {steps.length}
+              Всего шагов: {totalSteps} {groups.length > 0 && `в ${groups.length} группах`}
             </div>
           </div>
         )}

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Plus, Upload, Save, Download, FileText, Settings, FolderOpen, Clipboard, Code, Paperclip, Menu, X } from 'lucide-react';
+import { Plus, Upload, Save, Download, FileText, Settings, FolderOpen, Clipboard, Code, Paperclip, Menu, X, QrCode, FileUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -11,6 +11,8 @@ interface SidebarProps {
   onPasteImage: () => void;
   onSave: () => void;
   onExport: (format: 'html' | 'markdown' | 'json') => void;
+  onImportJSON: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onGenerateQR: () => void;
   onOpenSettings: () => void;
   onOpenSavedProjects: () => void;
 }
@@ -22,11 +24,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   onPasteImage,
   onSave,
   onExport,
+  onImportJSON,
+  onGenerateQR,
   onOpenSettings,
   onOpenSavedProjects
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -156,6 +161,31 @@ const Sidebar: React.FC<SidebarProps> = ({
             Экспорт в JSON
           </Button>
         </div>
+
+        <div>
+          <input
+            type="file"
+            ref={importInputRef}
+            onChange={onImportJSON}
+            accept=".json"
+            className="hidden"
+          />
+          <Button 
+            onClick={() => importInputRef.current?.click()}
+            className="w-full justify-start bg-indigo-600 hover:bg-indigo-700 text-white min-h-[44px]"
+          >
+            <FileUp className="w-4 h-4 mr-2" />
+            Импорт JSON
+          </Button>
+        </div>
+
+        <Button 
+          onClick={onGenerateQR} 
+          className="w-full justify-start bg-pink-600 hover:bg-pink-700 text-white min-h-[44px]"
+        >
+          <QrCode className="w-4 h-4 mr-2" />
+          Генерировать QR
+        </Button>
 
         <Button 
           onClick={onOpenSettings} 
