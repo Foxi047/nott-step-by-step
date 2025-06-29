@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Step, StepGroup } from '../types/Step';
@@ -26,6 +25,7 @@ interface MainAreaProps {
   onUpdateStep: (step: Step) => void;
   onDeleteStep: (stepId: string) => void;
   onCopyStep: (step: Step) => void;
+  onAddStepToGroup?: (groupId: string, type: 'text' | 'image' | 'code' | 'html' | 'file') => void;
 }
 
 const MainArea: React.FC<MainAreaProps> = ({
@@ -44,7 +44,8 @@ const MainArea: React.FC<MainAreaProps> = ({
   onEditImage,
   onUpdateStep,
   onDeleteStep,
-  onCopyStep
+  onCopyStep,
+  onAddStepToGroup
 }) => {
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -168,6 +169,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                   onDeleteStep={handleDeleteStep}
                   onCopyStep={onCopyStep}
                   onEditImage={onEditImage}
+                  onAddStepToGroup={onAddStepToGroup}
                 />
               ))}
 

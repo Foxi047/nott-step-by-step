@@ -1,24 +1,18 @@
 
+export interface StepStyle {
+  type: 'default' | 'info' | 'warning' | 'success' | 'error';
+  icon: string;
+}
+
 export interface Step {
   id: string;
   type: 'text' | 'image' | 'code' | 'html' | 'file';
   content: string;
   title?: string;
-  language?: string;
   imageUrl?: string;
-  annotations?: any[];
-  fileData?: string;
-  fileName?: string;
-  fileType?: string;
-  groupId?: string;
+  language?: string;
   style?: StepStyle;
-}
-
-export interface StepStyle {
-  type: 'default' | 'info' | 'warning' | 'success' | 'error';
-  backgroundColor?: string;
-  borderColor?: string;
-  icon?: string;
+  groupId?: string;
 }
 
 export interface StepGroup {
@@ -26,4 +20,5 @@ export interface StepGroup {
   title: string;
   isCollapsed: boolean;
   steps: Step[];
+  style?: StepStyle;
 }

@@ -111,6 +111,68 @@ const Index = () => {
     toast.success(`Добавлен новый шаг: ${typeNames[type] || type}`);
   };
 
+  const handleAddStepToGroup = (groupId: string, type: 'text' | 'image' | 'code' | 'html' | 'file') => {
+    let newStep: Step;
+
+    switch (type) {
+      case 'text':
+        newStep = {
+          id: Date.now().toString(),
+          type: 'text',
+          content: 'Введите текст здесь',
+          title: 'Новый текст',
+          groupId
+        };
+        break;
+      case 'code':
+        newStep = {
+          id: Date.now().toString(),
+          type: 'code',
+          content: '// Введите код здесь',
+          title: 'Новый код',
+          language: 'javascript',
+          groupId
+        };
+        break;
+      case 'html':
+        newStep = {
+          id: Date.now().toString(),
+          type: 'html',
+          content: '<p>Введите HTML код здесь</p>',
+          title: 'HTML блок',
+          groupId
+        };
+        break;
+      case 'image':
+        newStep = {
+          id: Date.now().toString(),
+          type: 'image',
+          content: '',
+          title: 'Новое изображение',
+          groupId
+        };
+        break;
+      case 'file':
+        newStep = {
+          id: Date.now().toString(),
+          type: 'file',
+          content: 'Описание файла',
+          title: 'Новый файл',
+          groupId
+        };
+        break;
+      default:
+        return;
+    }
+
+    // Добавляем шаг в группу
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+      updateGroup(groupId, { steps: [...group.steps, newStep] });
+      setSteps(prev => [...prev, newStep]);
+    }
+  };
+
   const handleUpdateStep = (updatedStep: Step) => {
     updateStep(updatedStep);
     updateStepInGroup(updatedStep);
@@ -230,7 +292,7 @@ const Index = () => {
       
       switch (format) {
         case 'html':
-          content = exportToHTML(instructionTitle, instructionDescription, allSteps);
+          content = exportToHTML(instructionTitle, instructionDescription, allSteps, groups);
           mimeType = 'text/html';
           extension = 'html';
           break;
@@ -429,6 +491,7 @@ const Index = () => {
         onUpdateStep={handleUpdateStep}
         onDeleteStep={deleteStep}
         onCopyStep={copyStep}
+        onAddStepToGroup={handleAddStepToGroup}
       />
     </div>
   );

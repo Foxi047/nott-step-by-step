@@ -20,6 +20,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   initialImageUrl
 }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(initialImageUrl || null);
+  const [currentEditingImage, setCurrentEditingImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [editMode, setEditMode] = useState<'crop' | 'konva'>('crop');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,6 +31,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   useEffect(() => {
     if (initialImageUrl) {
       setSelectedImage(initialImageUrl);
+      setCurrentEditingImage(initialImageUrl);
     }
   }, [initialImageUrl]);
 
@@ -44,7 +46,9 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      setSelectedImage(e.target?.result as string);
+      const imageUrl = e.target?.result as string;
+      setSelectedImage(imageUrl);
+      setCurrentEditingImage(imageUrl);
     };
     reader.readAsDataURL(file);
   };
@@ -57,7 +61,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     try {
       const croppedImage = cropperRef.current.getCroppedImage();
       if (croppedImage) {
-        setSelectedImage(croppedImage);
+        setCurrentEditingImage(croppedImage);
         toast.success('Изображение обрезано');
       } else {
         toast.error('Ошибка при обрезке изображения');
@@ -87,7 +91,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     try {
       const annotatedImage = konvaRef.current.getAnnotatedImage();
       if (annotatedImage) {
-        setSelectedImage(annotatedImage);
+        setCurrentEditingImage(annotatedImage);
         toast.success('Аннотации применены');
       } else {
         toast.error('Ошибка при применении аннотаций');
@@ -100,18 +104,23 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   };
 
   const handleSave = () => {
-    if (!selectedImage) {
+    const imageToSave = currentEditingImage || selectedImage;
+    if (!imageToSave) {
       toast.error('Выберите изображение');
       return;
     }
 
-    onSave(selectedImage, stepId || undefined);
+    onSave(imageToSave, stepId || undefined);
     
     if (stepId) {
       toast.success('Изображение обновлено');
     } else {
       toast.success('Изображение сохранено');
     }
+  };
+
+  const getImageForEditor = () => {
+    return currentEditingImage || selectedImage;
   };
 
   return (
@@ -180,7 +189,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                 <div className="space-y-4">
                   <CropperCanvas 
                     ref={cropperRef}
-                    imageUrl={selectedImage}
+                    imageUrl={getImageForEditor() || selectedImage}
                   />
                   
                   <div className="flex gap-2">
@@ -206,7 +215,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                 <div className="space-y-4">
                   <KonvaAnnotations
                     ref={konvaRef}
-                    imageUrl={selectedImage}
+                    imageUrl={getImageForEditor() || selectedImage}
                   />
                   
                   <div className="flex gap-2">
