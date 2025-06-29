@@ -61,7 +61,15 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
         content = `<p>${step.content?.replace(/\n/g, '<br>') || ''}</p>`;
         break;
       case 'code':
-        content = `<pre class="code-block"><code class="language-${step.language || 'javascript'}">${step.content || ''}</code></pre>`;
+        content = `
+          <div class="code-wrapper">
+            <div class="code-header">
+              <span class="code-language">${step.language || 'javascript'}</span>
+              <button class="copy-btn" onclick="copyToClipboard(this)" data-code="${step.content?.replace(/"/g, '&quot;') || ''}">📋</button>
+            </div>
+            <pre class="code-block"><code class="language-${step.language || 'javascript'}">${step.content || ''}</code></pre>
+          </div>
+        `;
         break;
       case 'html':
         content = step.content || '';
@@ -117,14 +125,22 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
       }
     };
 
+    const getGroupIcon = () => {
+      if (group.style?.icon) {
+        return group.style.icon;
+      }
+      return '📁';
+    };
+
     return `
       <div class="${getGroupClasses()}">
-        <div class="group-header">
-          <span class="group-icon">📁</span>
+        <div class="group-header" onclick="toggleGroup('${group.id}')">
+          <span class="group-toggle" id="toggle-${group.id}">▼</span>
+          <span class="group-icon">${getGroupIcon()}</span>
           <h2 class="group-title">${group.title}</h2>
           <span class="group-count">${groupSteps.length} шагов</span>
         </div>
-        <div class="group-steps">
+        <div class="group-steps" id="steps-${group.id}">
           ${groupSteps.map(step => getStepHTML(step)).join('')}
         </div>
       </div>
@@ -226,6 +242,17 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
             gap: 8px;
             margin-bottom: 12px;
         }
+        .group-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .group-toggle {
+            font-size: 1rem;
+            transition: transform 0.2s;
+        }
+        .group-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
         .step-icon, .group-icon {
             font-size: 1.2rem;
         }
@@ -257,13 +284,45 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
         .step-content {
             color: #e2e8f0;
         }
+        .code-wrapper {
+            margin: 10px 0;
+        }
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0f172a;
+            padding: 8px 12px;
+            border-radius: 6px 6px 0 0;
+            border: 1px solid #2d3748;
+            border-bottom: none;
+        }
+        .code-language {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+        .copy-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        .copy-btn:hover {
+            background: rgba(148, 163, 184, 0.1);
+            color: #f1f5f9;
+        }
         .code-block {
             background: #1a202c;
             border: 1px solid #2d3748;
-            border-radius: 6px;
+            border-radius: 0 0 6px 6px;
             padding: 15px;
             overflow-x: auto;
-            margin: 10px 0;
+            margin: 0;
         }
         .step-image {
             max-width: 100%;
@@ -301,6 +360,12 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
         }
         .group-steps {
             padding-left: 20px;
+            transition: max-height 0.3s ease;
+            overflow: hidden;
+        }
+        .group-steps.collapsed {
+            max-height: 0;
+            padding: 0 20px;
         }
         
         @media (max-width: 640px) {
@@ -312,6 +377,9 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
             }
             .step {
                 padding: 15px;
+            }
+            .group-steps {
+                padding-left: 10px;
             }
         }
     </style>
@@ -326,10 +394,44 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
         ${groups ? groups.map(group => getGroupHTML(group)).join('') : ''}
         ${ungroupedSteps.length > 0 ? `
             <div class="ungrouped-steps">
+                <h3 style="color: #94a3b8; margin-bottom: 20px;">📋 Шаги без группы</h3>
                 ${ungroupedSteps.map(step => getStepHTML(step)).join('')}
             </div>
         ` : ''}
     </div>
+    
+    <script>
+        function copyToClipboard(button) {
+            const code = button.getAttribute('data-code');
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '✅';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(() => {
+                button.textContent = '❌';
+                setTimeout(() => {
+                    button.textContent = '📋';
+                }, 2000);
+            });
+        }
+        
+        function toggleGroup(groupId) {
+            const toggle = document.getElementById('toggle-' + groupId);
+            const steps = document.getElementById('steps-' + groupId);
+            
+            if (steps.classList.contains('collapsed')) {
+                steps.classList.remove('collapsed');
+                toggle.classList.remove('collapsed');
+                toggle.textContent = '▼';
+            } else {
+                steps.classList.add('collapsed');
+                toggle.classList.add('collapsed');
+                toggle.textContent = '▶';
+            }
+        }
+    </script>
 </body>
 </html>
   `;

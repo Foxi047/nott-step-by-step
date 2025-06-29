@@ -23,9 +23,38 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
     const [color, setColor] = useState('#ff0000');
     const [isDrawing, setIsDrawing] = useState(false);
     const [currentPath, setCurrentPath] = useState<number[]>([]);
+    const [canvasSize, setCanvasSize] = useState({ width, height });
     const stageRef = useRef(null);
 
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#000000'];
+
+    // Calculate proper canvas dimensions maintaining aspect ratio
+    const calculateCanvasSize = (img: HTMLImageElement) => {
+      if (!img) return { width: 800, height: 500 };
+      
+      const maxWidth = Math.min(800, window.innerWidth - 100);
+      const maxHeight = Math.min(500, window.innerHeight - 300);
+      
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      
+      let canvasWidth = maxWidth;
+      let canvasHeight = maxWidth / aspectRatio;
+      
+      if (canvasHeight > maxHeight) {
+        canvasHeight = maxHeight;
+        canvasWidth = maxHeight * aspectRatio;
+      }
+      
+      return { width: canvasWidth, height: canvasHeight };
+    };
+
+    // Update canvas size when image loads
+    React.useEffect(() => {
+      if (image) {
+        const newSize = calculateCanvasSize(image);
+        setCanvasSize(newSize);
+      }
+    }, [image]);
 
     useImperativeHandle(ref, () => ({
       getAnnotatedImage: () => {
@@ -206,95 +235,105 @@ const KonvaAnnotations = forwardRef<KonvaAnnotationsRef, KonvaAnnotationsProps>(
           ))}
         </div>
         
-        <div className="border border-slate-600 rounded-lg p-4 bg-slate-900 overflow-x-auto">
-          <Stage
-            width={Math.min(width, window.innerWidth - 100)}
-            height={Math.min(height, window.innerHeight - 300)}
-            ref={stageRef}
-            onMouseDown={handleMouseDown}
-            onMousemove={handleMouseMove}
-            onMouseup={handleMouseUp}
-            onTouchStart={handleMouseDown}
-            onTouchMove={handleMouseMove}
-            onTouchEnd={handleMouseUp}
-          >
-            <Layer>
-              {image && (
-                <KonvaImage
-                  image={image}
-                  width={Math.min(width, window.innerWidth - 100)}
-                  height={Math.min(height, window.innerHeight - 300)}
-                  scaleX={Math.min(width, window.innerWidth - 100) / (image.width || width)}
-                  scaleY={Math.min(height, window.innerHeight - 300) / (image.height || height)}
-                />
-              )}
-              
-              {annotations.map((annotation) => {
-                if (annotation.type === 'rect') {
-                  return (
-                    <Rect
-                      key={annotation.id}
-                      x={annotation.x}
-                      y={annotation.y}
-                      width={annotation.width}
-                      height={annotation.height}
-                      fill={annotation.fill}
-                      stroke={annotation.stroke}
-                      strokeWidth={annotation.strokeWidth}
+        <div className="border border-slate-600 rounded-lg p-4 bg-slate-900">
+          <div className="flex justify-center">
+            <div 
+              className="max-w-full"
+              style={{ 
+                maxWidth: '100%',
+                width: `${canvasSize.width}px`,
+                height: 'auto'
+              }}
+            >
+              <Stage
+                width={canvasSize.width}
+                height={canvasSize.height}
+                ref={stageRef}
+                onMouseDown={handleMouseDown}
+                onMousemove={handleMouseMove}
+                onMouseup={handleMouseUp}
+                onTouchStart={handleMouseDown}
+                onTouchMove={handleMouseMove}
+                onTouchEnd={handleMouseUp}
+                className="max-w-full h-auto"
+              >
+                <Layer>
+                  {image && (
+                    <KonvaImage
+                      image={image}
+                      width={canvasSize.width}
+                      height={canvasSize.height}
                     />
-                  );
-                } else if (annotation.type === 'circle') {
-                  return (
-                    <Circle
-                      key={annotation.id}
-                      x={annotation.x}
-                      y={annotation.y}
-                      radius={annotation.radius}
-                      fill={annotation.fill}
-                      stroke={annotation.stroke}
-                      strokeWidth={annotation.strokeWidth}
-                    />
-                  );
-                } else if (annotation.type === 'arrow') {
-                  return (
-                    <Arrow
-                      key={annotation.id}
-                      points={annotation.points}
-                      stroke={annotation.stroke}
-                      strokeWidth={annotation.strokeWidth}
-                      fill={annotation.fill}
-                      pointerLength={10}
-                      pointerWidth={10}
-                    />
-                  );
-                } else if (annotation.type === 'line') {
-                  return (
+                  )}
+                  
+                  {annotations.map((annotation) => {
+                    if (annotation.type === 'rect') {
+                      return (
+                        <Rect
+                          key={annotation.id}
+                          x={annotation.x}
+                          y={annotation.y}
+                          width={annotation.width}
+                          height={annotation.height}
+                          fill={annotation.fill}
+                          stroke={annotation.stroke}
+                          strokeWidth={annotation.strokeWidth}
+                        />
+                      );
+                    } else if (annotation.type === 'circle') {
+                      return (
+                        <Circle
+                          key={annotation.id}
+                          x={annotation.x}
+                          y={annotation.y}
+                          radius={annotation.radius}
+                          fill={annotation.fill}
+                          stroke={annotation.stroke}
+                          strokeWidth={annotation.strokeWidth}
+                        />
+                      );
+                    } else if (annotation.type === 'arrow') {
+                      return (
+                        <Arrow
+                          key={annotation.id}
+                          points={annotation.points}
+                          stroke={annotation.stroke}
+                          strokeWidth={annotation.strokeWidth}
+                          fill={annotation.fill}
+                          pointerLength={10}
+                          pointerWidth={10}
+                        />
+                      );
+                    } else if (annotation.type === 'line') {
+                      return (
+                        <Line
+                          key={annotation.id}
+                          points={annotation.points}
+                          stroke={annotation.stroke}
+                          strokeWidth={annotation.strokeWidth}
+                          tension={0.5}
+                          lineCap="round"
+                          globalCompositeOperation="source-over"
+                        />
+                      );
+                    }
+                    return null;
+                  })}
+                  
+                  {tool === 'pen' && currentPath.length > 0 && (
                     <Line
-                      key={annotation.id}
-                      points={annotation.points}
-                      stroke={annotation.stroke}
-                      strokeWidth={annotation.strokeWidth}
+                      points={currentPath}
+                      stroke={color}
+                      strokeWidth={2}
                       tension={0.5}
                       lineCap="round"
                       globalCompositeOperation="source-over"
                     />
-                  );
-                }
-                return null;
-              })}
-              
-              {tool === 'pen' && currentPath.length > 0 && (
-                <Line
-                  points={currentPath}
-                  stroke={color}
-                  strokeWidth={2}
-                  tension={0.5}
-                  lineCap="round"
-                  globalCompositeOperation="source-over"
-                />
-              )}
-            </Layer>
-          </Stage>
+                  )}
+                </Layer>
+              </Stage>
+            </div>
+          </div>
         </div>
       </div>
     );

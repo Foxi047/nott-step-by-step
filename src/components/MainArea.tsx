@@ -61,12 +61,11 @@ const MainArea: React.FC<MainAreaProps> = ({
     const { source, destination } = result;
     
     // Handle group reordering
-    if (source.droppableId === 'groups' && destination.droppableId === 'groups') {
-      // This will be handled by group drag and drop
-      return;
+    if (result.type === 'group') {
+      return; // Group reordering will be handled separately
     }
     
-    // Handle step reordering within groups or ungrouped steps
+    // Handle step reordering within same droppable
     if (source.droppableId === destination.droppableId) {
       if (source.droppableId === 'ungrouped') {
         const newUngroupedSteps = Array.from(ungroupedSteps);
@@ -87,7 +86,7 @@ const MainArea: React.FC<MainAreaProps> = ({
         }
       }
     } else {
-      // Handle moving between groups or from ungrouped to group
+      // Handle moving between different droppables
       let sourceStep: Step | undefined;
       
       // Get the step being moved
@@ -117,7 +116,7 @@ const MainArea: React.FC<MainAreaProps> = ({
       
       // Add to destination
       if (destination.droppableId === 'ungrouped') {
-        const newUngroupedSteps = Array.from(ungroupedSteps);
+        const newUngroupedSteps = Array.from(ungroupedSteps.filter(s => s.id !== sourceStep.id));
         newUngroupedSteps.splice(destination.index, 0, { ...sourceStep, groupId: undefined });
         const allGroupedSteps = groups.flatMap(g => g.steps);
         onStepsChange([...allGroupedSteps, ...newUngroupedSteps]);
@@ -243,7 +242,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                     <span>📋</span>
                     Шаги без группы
                   </h3>
-                  <Droppable droppableId="ungrouped">
+                  <Droppable droppableId="ungrouped" type="step">
                     {(provided, snapshot) => (
                       <div
                         {...provided.droppableProps}
