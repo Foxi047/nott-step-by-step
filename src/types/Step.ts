@@ -13,6 +13,9 @@ export interface Step {
   language?: string;
   style?: StepStyle;
   groupId?: string;
+  fileData?: string;
+  fileName?: string;
+  fileType?: string;
 }
 
 export interface StepGroup {
