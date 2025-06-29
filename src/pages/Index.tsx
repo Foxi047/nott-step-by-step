@@ -486,6 +486,7 @@ const Index = () => {
           title={previewData.title}
           description={previewData.description}
           steps={previewData.steps}
+          groups={groups}
           onClose={() => setShowPreview(false)}
           onSaveWithTheme={handleSaveWithTheme}
         />

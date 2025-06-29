@@ -1,80 +1,20 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Palette, Info, HelpCircle, Plus, Trash2, Layout } from 'lucide-react';
+import { X, Palette, Info, HelpCircle } from 'lucide-react';
 import { useTheme, Theme } from '../hooks/useTheme';
-import { toast } from 'sonner';
 
 interface SettingsProps {
   onClose: () => void;
 }
 
-interface StepTemplate {
-  id: string;
-  name: string;
-  description: string;
-  steps: Array<{
-    type: 'text' | 'code' | 'image';
-    title: string;
-    content: string;
-    language?: string;
-  }>;
-}
-
 const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'appearance' | 'templates' | 'help' | 'about'>('appearance');
-  const [templates, setTemplates] = useState<StepTemplate[]>([
-    {
-      id: 'image-text',
-      name: 'Изображение + текст',
-      description: 'Шаблон с изображением и пояснительным текстом',
-      steps: [
-        { type: 'image', title: 'Изображение', content: 'Описание изображения' },
-        { type: 'text', title: 'Пояснение', content: 'Объяснение к изображению' }
-      ]
-    },
-    {
-      id: 'code-explanation',
-      name: 'Код + объяснение',
-      description: 'Шаблон с примером кода и объяснением',
-      steps: [
-        { type: 'code', title: 'Пример кода', content: '// Пример кода\nconsole.log("Hello, World!");', language: 'javascript' },
-        { type: 'text', title: 'Объяснение', content: 'Объяснение работы кода' }
-      ]
-    }
-  ]);
-  const [newTemplate, setNewTemplate] = useState<Partial<StepTemplate>>({});
+  const [activeTab, setActiveTab] = useState<'appearance' | 'help' | 'about'>('appearance');
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
-  };
-
-  const handleAddTemplate = () => {
-    if (!newTemplate.name || !newTemplate.description) {
-      toast.error('Заполните название и описание шаблона');
-      return;
-    }
-
-    const template: StepTemplate = {
-      id: Date.now().toString(),
-      name: newTemplate.name,
-      description: newTemplate.description,
-      steps: [
-        { type: 'text', title: 'Новый шаг', content: 'Содержимое шага' }
-      ]
-    };
-
-    setTemplates([...templates, template]);
-    setNewTemplate({});
-    toast.success('Шаблон добавлен');
-  };
-
-  const handleDeleteTemplate = (id: string) => {
-    setTemplates(templates.filter(t => t.id !== id));
-    toast.success('Шаблон удален');
   };
 
   const renderAppearanceTab = () => (
@@ -93,62 +33,9 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
             <SelectItem value="dark">Тёмная</SelectItem>
           </SelectContent>
         </Select>
-      </div>
-    </div>
-  );
-
-  const renderTemplatesTab = () => (
-    <div className="space-y-4">
-      <h3 className="font-medium text-white">Шаблоны шагов</h3>
-      
-      <div className="space-y-3">
-        {templates.map((template) => (
-          <div key={template.id} className="bg-slate-700 p-4 rounded-lg">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="font-medium text-white">{template.name}</h4>
-                <p className="text-sm text-slate-400">{template.description}</p>
-                <p className="text-xs text-slate-500 mt-1">{template.steps.length} шагов</p>
-              </div>
-              {!['image-text', 'code-explanation'].includes(template.id) && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleDeleteTemplate(template.id)}
-                  className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="border-t border-slate-600 pt-4">
-        <h4 className="font-medium text-white mb-3">Добавить новый шаблон</h4>
-        <div className="space-y-3">
-          <Input
-            placeholder="Название шаблона"
-            value={newTemplate.name || ''}
-            onChange={(e) => setNewTemplate({ ...newTemplate, name: e.target.value })}
-            className="bg-slate-800 border-slate-600 text-white"
-          />
-          <Textarea
-            placeholder="Описание шаблона"
-            value={newTemplate.description || ''}
-            onChange={(e) => setNewTemplate({ ...newTemplate, description: e.target.value })}
-            className="bg-slate-800 border-slate-600 text-white"
-            rows={2}
-          />
-          <Button
-            onClick={handleAddTemplate}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Добавить шаблон
-          </Button>
-        </div>
+        <p className="text-xs text-slate-400 mt-2">
+          Выберите тему для интерфейса приложения. Тема также применяется в предпросмотре и экспорте.
+        </p>
       </div>
     </div>
   );
@@ -163,26 +50,48 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           <p>1. Введите название и описание инструкции</p>
           <p>2. Добавляйте шаги с помощью кнопок на панели слева</p>
           <p>3. Перетаскивайте шаги для изменения порядка</p>
+          <p>4. Группируйте связанные шаги для лучшей организации</p>
         </div>
         
         <div>
           <h4 className="font-medium text-white mb-1">Типы шагов:</h4>
-          <p>• Текст - для обычных объяснений</p>
+          <p>• Текст - для обычных объяснений и описаний</p>
           <p>• Код - для примеров кода с подсветкой синтаксиса</p>
           <p>• Изображение - для скриншотов и иллюстраций</p>
+          <p>• HTML-блок - для готовых HTML шаблонов</p>
+          <p>• Файлы - для прикрепления документов</p>
+        </div>
+        
+        <div>
+          <h4 className="font-medium text-white mb-1">Группы шагов:</h4>
+          <p>• Создавайте группы для организации связанных шагов</p>
+          <p>• Группы можно сворачивать и разворачивать</p>
+          <p>• Перетаскивайте шаги между группами</p>
+          <p>• Группы отображаются в предпросмотре и экспорте</p>
+        </div>
+        
+        <div>
+          <h4 className="font-medium text-white mb-1">Предпросмотр:</h4>
+          <p>• Просматривайте инструкцию в реальном времени</p>
+          <p>• Переключайте темы оформления</p>
+          <p>• Сворачивайте группы в предпросмотре</p>
+          <p>• Копируйте код прямо из предпросмотра</p>
         </div>
         
         <div>
           <h4 className="font-medium text-white mb-1">Экспорт:</h4>
-          <p>• HTML - для веб-страниц</p>
+          <p>• HTML - для веб-страниц с интерактивными функциями</p>
           <p>• Markdown - для документации</p>
           <p>• JSON - для программного использования</p>
+          <p>• QR-код - для быстрого доступа к инструкции</p>
         </div>
         
         <div>
           <h4 className="font-medium text-white mb-1">Сохранение:</h4>
-          <p>Используйте кнопку "Сохранить" для сохранения проекта локально</p>
-          <p>Доступ к сохранённым проектам через кнопку "Сохранённые проекты"</p>
+          <p>• Автосохранение работает в фоновом режиме</p>
+          <p>• Ручное сохранение через кнопку "Сохранить"</p>
+          <p>• Сохранение с темой из предпросмотра</p>
+          <p>• Импорт и экспорт проектов в JSON</p>
         </div>
       </div>
     </div>
@@ -194,7 +103,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
       
       <div className="space-y-2">
         <p><span className="font-medium text-white">Название:</span> Nott Instructions</p>
-        <p><span className="font-medium text-white">Версия:</span> 1.0.0</p>
+        <p><span className="font-medium text-white">Версия:</span> 2.0.0</p>
         <p><span className="font-medium text-white">Разработчик:</span> Nott</p>
         <p><span className="font-medium text-white">Язык программирования:</span> TypeScript</p>
         <p><span className="font-medium text-white">Фреймворк:</span> React 18</p>
@@ -209,18 +118,36 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           <p>• Lucide React</p>
           <p>• React Beautiful DnD</p>
           <p>• Vite</p>
+          <p>• Konva (для редактирования изображений)</p>
+          <p>• QRCode (для генерации QR-кодов)</p>
         </div>
       </div>
       
       <div>
-        <p className="font-medium text-white mb-2">Функции:</p>
+        <p className="font-medium text-white mb-2">Основные функции:</p>
         <div className="pl-4 space-y-1">
           <p>• Создание пошаговых инструкций</p>
-          <p>• Поддержка текста, кода и изображений</p>
-          <p>• Drag & Drop сортировка</p>
+          <p>• Поддержка текста, кода, изображений, HTML и файлов</p>
+          <p>• Группировка шагов с возможностью сворачивания</p>
+          <p>• Drag & Drop сортировка шагов и групп</p>
+          <p>• Интерактивный предпросмотр с темами</p>
           <p>• Экспорт в HTML/Markdown/JSON</p>
           <p>• Локальное сохранение проектов</p>
-          <p>• Темы оформления</p>
+          <p>• Автосохранение работы</p>
+          <p>• Генерация QR-кодов</p>
+          <p>• Редактор изображений с аннотациями</p>
+        </div>
+      </div>
+      
+      <div>
+        <p className="font-medium text-white mb-2">Новые возможности v2.0:</p>
+        <div className="pl-4 space-y-1">
+          <p>• Система групп с визуальными стилями</p>
+          <p>• Сворачиваемые группы в предпросмотре и экспорте</p>
+          <p>• Улучшенный HTML экспорт с интерактивностью</p>
+          <p>• Поддержка тем в экспортированных файлах</p>
+          <p>• Расширенные HTML шаблоны</p>
+          <p>• Улучшенный интерфейс и UX</p>
         </div>
       </div>
     </div>
@@ -253,17 +180,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
             Оформление
           </button>
           <button
-            onClick={() => setActiveTab('templates')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'templates'
-                ? 'border-blue-500 text-blue-400'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
-          >
-            <Layout className="w-4 h-4 inline mr-2" />
-            Шаблоны
-          </button>
-          <button
             onClick={() => setActiveTab('help')}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'help'
@@ -289,7 +205,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
 
         <div>
           {activeTab === 'appearance' && renderAppearanceTab()}
-          {activeTab === 'templates' && renderTemplatesTab()}
           {activeTab === 'help' && renderHelpTab()}
           {activeTab === 'about' && renderAboutTab()}
         </div>

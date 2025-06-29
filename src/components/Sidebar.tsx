@@ -109,13 +109,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const SidebarContent = () => (
-    <div className="h-full bg-slate-900 border-r border-slate-700 flex flex-col">
+    <div className="h-screen bg-slate-900 border-r border-slate-700 flex flex-col overflow-hidden">
       <div className="p-4 sm:p-6 flex-shrink-0">
         <h1 className="text-lg sm:text-xl font-bold text-white mb-2">Nott Instructions</h1>
       </div>
 
       <div className="flex-1 px-4 sm:px-6 overflow-y-auto">
-        <div className="space-y-3">
+        <div className="space-y-3 pb-6">
           <h3 className="text-sm font-medium text-slate-300 mb-3">Добавить элемент</h3>
           
           <Button 

@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Download, Copy, Palette, Save } from 'lucide-react';
-import { Step } from '../types/Step';
+import { X, Download, Copy, Palette, Save, ChevronDown, ChevronRight } from 'lucide-react';
+import { Step, StepGroup } from '../types/Step';
 import { toast } from 'sonner';
 import { useTheme, Theme } from '../hooks/useTheme';
 
@@ -10,6 +11,7 @@ interface PreviewModeProps {
   title: string;
   description: string;
   steps: Step[];
+  groups?: StepGroup[];
   onClose: () => void;
   onSaveWithTheme?: (theme: Theme) => void;
 }
@@ -18,11 +20,13 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
   title,
   description,
   steps,
+  groups = [],
   onClose,
   onSaveWithTheme
 }) => {
   const { theme, setTheme } = useTheme();
   const [previewTheme, setPreviewTheme] = useState<Theme>(theme);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const handleCopyCode = async (code: string) => {
     try {
@@ -43,6 +47,18 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
       onSaveWithTheme(previewTheme);
       toast.success(`Инструкция сохранена с темой: ${previewTheme === 'light' ? 'Светлая' : previewTheme === 'gray' ? 'Серая' : 'Тёмная'}`);
     }
+  };
+
+  const toggleGroupCollapse = (groupId: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
   };
 
   const handleExportHTML = () => {
@@ -66,8 +82,36 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
         .container { max-width: 800px; margin: 0 auto; background: ${themeStyles.cardBg}; padding: 40px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         h1 { color: ${themeStyles.text}; margin-bottom: 10px; font-size: 2rem; }
         .description { color: ${themeStyles.secondary}; margin-bottom: 30px; font-size: 1.1rem; }
+        
+        .group {
+            margin: 30px 0;
+            border: 2px solid ${themeStyles.border};
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .group-header {
+            background: ${themeStyles.border};
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 600;
+            color: ${themeStyles.text};
+        }
+        .group-header:hover { background: ${themeStyles.secondary}; }
+        .group-toggle { margin-right: 10px; transition: transform 0.2s; }
+        .group-toggle.collapsed { transform: rotate(-90deg); }
+        .group-content { 
+            background: ${themeStyles.cardBg}; 
+            transition: max-height 0.3s ease-out;
+            overflow: hidden;
+        }
+        .group-content.collapsed { max-height: 0; }
+        .group-content.expanded { max-height: 1000px; }
+        
         .step { 
-            margin: 30px 0; 
+            margin: 20px; 
             padding: 20px; 
             border: 1px solid ${themeStyles.border};
             border-radius: 8px;
@@ -167,10 +211,52 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
     <div class="container">
         <h1>${title}</h1>
         ${description ? `<div class="description">${description}</div>` : ''}
-        ${steps.map((step: Step, index: number) => `
+        
+        ${groups.length > 0 ? groups.map((group: StepGroup) => `
+            <div class="group">
+                <div class="group-header" onclick="toggleGroup('${group.id}')">
+                    <span class="group-toggle" id="toggle-${group.id}">▼</span>
+                    ${group.title}
+                </div>
+                <div class="group-content expanded" id="content-${group.id}">
+                    ${group.steps.map((step: Step, index: number) => `
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">${index + 1}</div>
+                                ${step.title || 'Шаг'}
+                            </div>
+                            <div class="step-content">
+                                ${step.type === 'code' ? `
+                                    <div class="code-container">
+                                        <div class="code-header">
+                                            ${step.language ? `<div class="language-tag">${step.language}</div>` : ''}
+                                            <button onclick="copyCode(this)" class="copy-btn">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                    <path d="m5 15-1-1v-8c0-1 1-2 2-2h8l1 1"></path>
+                                                </svg>
+                                                Копировать
+                                            </button>
+                                        </div>
+                                        <pre><code>${step.content}</code></pre>
+                                    </div>
+                                ` : step.type === 'image' && step.imageUrl ? `
+                                    <img src="${step.imageUrl}" alt="${step.title || ''}" />
+                                    ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
+                                ` : `
+                                    <div class="step-text">${step.content}</div>
+                                `}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('') : ''}
+        
+        ${steps.filter(step => !step.groupId).map((step: Step, index: number) => `
             <div class="step">
                 <div class="step-header">
-                    <div class="step-number">${index + 1}</div>
+                    <div class="step-number">${groups.reduce((acc, group) => acc + group.steps.length, 0) + index + 1}</div>
                     ${step.title || 'Шаг'}
                 </div>
                 <div class="step-content">
@@ -200,6 +286,21 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
     </div>
     
     <script>
+        function toggleGroup(groupId) {
+            const content = document.getElementById('content-' + groupId);
+            const toggle = document.getElementById('toggle-' + groupId);
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                content.classList.add('expanded');
+                toggle.textContent = '▼';
+            } else {
+                content.classList.remove('expanded');
+                content.classList.add('collapsed');
+                toggle.textContent = '▶';
+            }
+        }
+        
         function copyCode(button) {
             const codeBlock = button.closest('.code-container').querySelector('code');
             const text = codeBlock.textContent;
@@ -275,6 +376,7 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
   };
 
   const themeStyles = getThemeStyles(previewTheme);
+  const ungroupedSteps = steps.filter(step => !step.groupId);
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto" style={{ background: themeStyles.bg }}>
@@ -328,59 +430,142 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
           <p className="text-lg mb-8" style={{ color: themeStyles.secondary }}>{description}</p>
         )}
         
-        {steps.map((step, index) => (
-          <div key={step.id} className="mb-8 p-6 border rounded-lg" style={{ 
-            borderColor: themeStyles.border, 
+        {/* Группированные шаги */}
+        {groups.map((group) => (
+          <div key={group.id} className="mb-8 border-2 rounded-lg overflow-hidden" style={{ 
+            borderColor: themeStyles.border,
             background: themeStyles.cardBg 
           }}>
-            <div className="flex items-center mb-4">
-              <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-3">
-                {index + 1}
-              </div>
-              <h3 className="text-xl font-semibold" style={{ color: themeStyles.text }}>
-                {step.title || 'Шаг'}
-              </h3>
+            <div 
+              className="p-4 cursor-pointer flex items-center font-semibold hover:opacity-80"
+              style={{ background: themeStyles.border, color: themeStyles.text }}
+              onClick={() => toggleGroupCollapse(group.id)}
+            >
+              {collapsedGroups.has(group.id) ? (
+                <ChevronRight className="w-5 h-5 mr-2" />
+              ) : (
+                <ChevronDown className="w-5 h-5 mr-2" />
+              )}
+              {group.title}
             </div>
             
-            <div className="ml-11">
-              {step.type === 'code' ? (
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    {step.language && (
-                      <div className="bg-blue-600 text-white px-3 py-1 rounded text-sm inline-block">
-                        {step.language}
+            {!collapsedGroups.has(group.id) && (
+              <div className="p-4" style={{ background: themeStyles.cardBg }}>
+                {group.steps.map((step, stepIndex) => (
+                  <div key={step.id} className="mb-6 p-6 border rounded-lg" style={{ 
+                    borderColor: themeStyles.border, 
+                    background: themeStyles.bg 
+                  }}>
+                    <div className="flex items-center mb-4">
+                      <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-3">
+                        {stepIndex + 1}
                       </div>
-                    )}
-                    <Button 
-                      size="sm"
-                      onClick={() => handleCopyCode(step.content)}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Copy className="w-3 h-3 mr-1" />
-                      Копировать код
-                    </Button>
+                      <h3 className="text-xl font-semibold" style={{ color: themeStyles.text }}>
+                        {step.title || 'Шаг'}
+                      </h3>
+                    </div>
+                    
+                    <div className="ml-11">
+                      {step.type === 'code' ? (
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            {step.language && (
+                              <div className="bg-blue-600 text-white px-3 py-1 rounded text-sm inline-block">
+                                {step.language}
+                              </div>
+                            )}
+                            <Button 
+                              size="sm"
+                              onClick={() => handleCopyCode(step.content)}
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                            >
+                              <Copy className="w-3 h-3 mr-1" />
+                              Копировать код
+                            </Button>
+                          </div>
+                          <pre className="bg-gray-900 text-green-400 p-4 rounded overflow-x-auto relative">
+                            <code>{step.content}</code>
+                          </pre>
+                        </div>
+                      ) : step.type === 'image' && step.imageUrl ? (
+                        <div>
+                          <img 
+                            src={step.imageUrl} 
+                            alt={step.title || 'Изображение'} 
+                            className="max-w-full h-auto rounded shadow-lg mb-4"
+                          />
+                          {step.content && (
+                            <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                      )}
+                    </div>
                   </div>
-                  <pre className="bg-gray-900 text-green-400 p-4 rounded overflow-x-auto relative">
-                    <code>{step.content}</code>
-                  </pre>
-                </div>
-              ) : step.type === 'image' && step.imageUrl ? (
-                <div>
-                  <img 
-                    src={step.imageUrl} 
-                    alt={step.title || 'Изображение'} 
-                    className="max-w-full h-auto rounded shadow-lg mb-4"
-                  />
-                  {step.content && (
-                    <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
-                  )}
-                </div>
-              ) : (
-                <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
+        
+        {/* Неформированные шаги */}
+        {ungroupedSteps.map((step, index) => {
+          const stepNumber = groups.reduce((acc, group) => acc + group.steps.length, 0) + index + 1;
+          return (
+            <div key={step.id} className="mb-8 p-6 border rounded-lg" style={{ 
+              borderColor: themeStyles.border, 
+              background: themeStyles.cardBg 
+            }}>
+              <div className="flex items-center mb-4">
+                <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-3">
+                  {stepNumber}
+                </div>
+                <h3 className="text-xl font-semibold" style={{ color: themeStyles.text }}>
+                  {step.title || 'Шаг'}
+                </h3>
+              </div>
+              
+              <div className="ml-11">
+                {step.type === 'code' ? (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      {step.language && (
+                        <div className="bg-blue-600 text-white px-3 py-1 rounded text-sm inline-block">
+                          {step.language}
+                        </div>
+                      )}
+                      <Button 
+                        size="sm"
+                        onClick={() => handleCopyCode(step.content)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Copy className="w-3 h-3 mr-1" />
+                        Копировать код
+                      </Button>
+                    </div>
+                    <pre className="bg-gray-900 text-green-400 p-4 rounded overflow-x-auto relative">
+                      <code>{step.content}</code>
+                    </pre>
+                  </div>
+                ) : step.type === 'image' && step.imageUrl ? (
+                  <div>
+                    <img 
+                      src={step.imageUrl} 
+                      alt={step.title || 'Изображение'} 
+                      className="max-w-full h-auto rounded shadow-lg mb-4"
+                    />
+                    {step.content && (
+                      <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
