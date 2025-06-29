@@ -91,14 +91,41 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
     try {
       const annotatedImage = konvaRef.current.getAnnotatedImage();
       if (annotatedImage) {
-        setCurrentEditingImage(annotatedImage);
-        toast.success('Аннотации применены');
+        // Создаем новое изображение для проверки размеров
+        const img = new Image();
+        img.onload = () => {
+          // Создаем canvas с правильными пропорциями
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (ctx) {
+            // Сохраняем оригинальные пропорции
+            const originalImg = new Image();
+            originalImg.onload = () => {
+              canvas.width = originalImg.naturalWidth;
+              canvas.height = originalImg.naturalHeight;
+              
+              // Рисуем изображение без растягивания
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              
+              const finalImage = canvas.toDataURL('image/jpeg', 0.9);
+              setCurrentEditingImage(finalImage);
+              toast.success('Аннотации применены');
+              setIsProcessing(false);
+            };
+            
+            if (currentEditingImage || selectedImage) {
+              originalImg.src = currentEditingImage || selectedImage || '';
+            }
+          }
+        };
+        img.src = annotatedImage;
       } else {
         toast.error('Ошибка при применении аннотаций');
+        setIsProcessing(false);
       }
     } catch (error) {
       toast.error('Ошибка при применении аннотаций');
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -141,24 +168,20 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
 
         <div className="space-y-4">
           <div className="flex gap-2">
-            {!stepId && (
-              <>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelect}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Выбрать изображение
-                </Button>
-              </>
-            )}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*"
+              className="hidden"
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {stepId ? 'Загрузить новое изображение' : 'Выбрать изображение'}
+            </Button>
 
             {selectedImage && (
               <>

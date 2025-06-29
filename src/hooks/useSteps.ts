@@ -68,12 +68,14 @@ export const useSteps = () => {
   }, []);
 
   const copyStep = useCallback((step: Step) => {
+    // Создаем копию шага вместо копирования в буфер обмена
     const newStep: Step = {
       ...step,
       id: Date.now().toString(),
       title: step.title ? `${step.title} (копия)` : undefined
     };
     setSteps(prev => [...prev, newStep]);
+    toast.success('Шаг скопирован');
   }, []);
 
   const reorderSteps = useCallback((newSteps: Step[]) => {

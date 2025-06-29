@@ -47,14 +47,9 @@ const StepEditor: React.FC<StepEditorProps> = ({
     setIsEditing(false);
   };
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(step.content);
-      toast.success('Скопировано в буфер обмена');
-      onCopy(step);
-    } catch (err) {
-      toast.error('Ошибка копирования');
-    }
+  const handleCopy = () => {
+    // Просто вызываем функцию копирования без попытки скопировать в буфер обмена
+    onCopy(step);
   };
 
   const handleStyleChange = (style: StepStyle) => {

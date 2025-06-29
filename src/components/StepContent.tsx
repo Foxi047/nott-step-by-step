@@ -11,13 +11,17 @@ interface StepContentProps {
   showHtmlPreview: boolean;
   onHtmlPreviewToggle: (show: boolean) => void;
   onEditImage?: (stepId: string) => void;
+  onEditFile?: (step: Step) => void;
+  onEditHtml?: (step: Step) => void;
 }
 
 const StepContent: React.FC<StepContentProps> = ({
   step,
   showHtmlPreview,
   onHtmlPreviewToggle,
-  onEditImage
+  onEditImage,
+  onEditFile,
+  onEditHtml
 }) => {
   const renderStepContent = () => {
     if (step.type === 'image' && step.imageUrl) {
@@ -29,7 +33,7 @@ const StepContent: React.FC<StepContentProps> = ({
     }
     
     if (step.type === 'file') {
-      return <FileStepEditor step={step} />;
+      return <FileStepEditor step={step} onEditFile={onEditFile} />;
     }
     
     if (step.type === 'html') {
@@ -52,6 +56,15 @@ const StepContent: React.FC<StepContentProps> = ({
             >
               Предпросмотр
             </Button>
+            {onEditHtml && (
+              <Button
+                size="sm"
+                onClick={() => onEditHtml(step)}
+                className="text-xs bg-purple-600 hover:bg-purple-700"
+              >
+                Изменить шаблон
+              </Button>
+            )}
           </div>
           {showHtmlPreview ? (
             <div 

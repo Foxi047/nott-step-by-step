@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Edit, Trash2, Plus } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Plus, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { StepGroup as StepGroupType, Step } from '../types/Step';
+import { StepGroup as StepGroupType, Step, StepStyle } from '../types/Step';
 import StepEditor from './StepEditor';
+import StepGroupStyleSelector from './StepGroupStyleSelector';
 import { Droppable, Draggable } from 'react-beautiful-dnd';
 import { toast } from 'sonner';
 
@@ -19,6 +20,9 @@ interface StepGroupProps {
   onCopyStep: (step: Step) => void;
   onEditImage?: (stepId: string) => void;
   onAddStepToGroup?: (groupId: string, type: 'text' | 'image' | 'code' | 'html' | 'file') => void;
+  onAddHtmlWithTemplate?: (groupId: string) => void;
+  onLoadImageToGroup?: (groupId: string) => void;
+  onAddFileToGroup?: (groupId: string) => void;
 }
 
 const StepGroupComponent: React.FC<StepGroupProps> = ({
@@ -29,10 +33,14 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
   onDeleteStep,
   onCopyStep,
   onEditImage,
-  onAddStepToGroup
+  onAddStepToGroup,
+  onAddHtmlWithTemplate,
+  onLoadImageToGroup,
+  onAddFileToGroup
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(group.title);
+  const [showStyleSelector, setShowStyleSelector] = useState(false);
 
   const handleSaveTitle = () => {
     onUpdateGroup(group.id, { title: editTitle });
@@ -43,8 +51,19 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
     onUpdateGroup(group.id, { isCollapsed: !group.isCollapsed });
   };
 
+  const handleStyleChange = (style: StepStyle) => {
+    onUpdateGroup(group.id, { style });
+    setShowStyleSelector(false);
+  };
+
   const handleAddStep = (type: 'text' | 'image' | 'code' | 'html' | 'file') => {
-    if (onAddStepToGroup) {
+    if (type === 'html' && onAddHtmlWithTemplate) {
+      onAddHtmlWithTemplate(group.id);
+    } else if (type === 'image' && onLoadImageToGroup) {
+      onLoadImageToGroup(group.id);
+    } else if (type === 'file' && onAddFileToGroup) {
+      onAddFileToGroup(group.id);
+    } else if (onAddStepToGroup) {
       onAddStepToGroup(group.id, type);
       toast.success(`Шаг "${type}" добавлен в группу`);
     }
@@ -69,6 +88,13 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
       default:
         return `${baseClasses} bg-slate-700/50 border-purple-600/30`;
     }
+  };
+
+  const getGroupIcon = () => {
+    if (group.style?.icon) {
+      return group.style.icon;
+    }
+    return '📁';
   };
 
   return (
@@ -98,7 +124,7 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-lg">📁</span>
+                <span className="text-lg">{getGroupIcon()}</span>
                 <h3 className="text-lg font-semibold text-purple-200">{group.title}</h3>
                 <span className="text-xs text-purple-300 bg-purple-800/30 px-2 py-1 rounded">
                   {group.steps.length} шагов
@@ -136,23 +162,31 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
                     onClick={() => handleAddStep('html')}
                     className="text-white hover:bg-slate-600 cursor-pointer"
                   >
-                    🌐 HTML
+                    🌐 HTML-блок с шаблоном
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => handleAddStep('image')}
                     className="text-white hover:bg-slate-600 cursor-pointer"
                   >
-                    🖼️ Изображение
+                    🖼️ Добавить изображение
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={() => handleAddStep('file')}
                     className="text-white hover:bg-slate-600 cursor-pointer"
                   >
-                    📎 Файл
+                    📎 Прикрепить файл
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowStyleSelector(!showStyleSelector)}
+              className="text-purple-400 hover:text-purple-300"
+            >
+              <Palette className="w-4 h-4" />
+            </Button>
             <Button
               size="sm"
               variant="ghost"
@@ -171,6 +205,15 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
             </Button>
           </div>
         </div>
+
+        {showStyleSelector && (
+          <div className="mb-4 p-3 bg-slate-800/50 rounded-lg border border-slate-600">
+            <StepGroupStyleSelector
+              currentStyle={group.style}
+              onStyleChange={handleStyleChange}
+            />
+          </div>
+        )}
 
         <CollapsibleContent>
           <Droppable droppableId={`group-${group.id}`} type="step">
