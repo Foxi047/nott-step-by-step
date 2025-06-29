@@ -7,6 +7,7 @@ import StepGroupComponent from './StepGroup';
 import InstructionHeader from './InstructionHeader';
 import GroupCreator from './GroupCreator';
 import EmptyState from './EmptyState';
+import FileEditor from './FileEditor';
 import { toast } from 'sonner';
 
 interface MainAreaProps {
@@ -59,7 +60,13 @@ const MainArea: React.FC<MainAreaProps> = ({
 
     const { source, destination } = result;
     
-    // Handle reordering within groups or ungrouped steps
+    // Handle group reordering
+    if (source.droppableId === 'groups' && destination.droppableId === 'groups') {
+      // This will be handled by group drag and drop
+      return;
+    }
+    
+    // Handle step reordering within groups or ungrouped steps
     if (source.droppableId === destination.droppableId) {
       if (source.droppableId === 'ungrouped') {
         const newUngroupedSteps = Array.from(ungroupedSteps);
@@ -146,6 +153,37 @@ const MainArea: React.FC<MainAreaProps> = ({
     onDeleteStep(stepId);
   };
 
+  const handleCopyStep = (step: Step) => {
+    // Create a copy of the step
+    const newStep: Step = {
+      ...step,
+      id: Date.now().toString(),
+      title: step.title ? `${step.title} (копия)` : undefined
+    };
+
+    // Add to the same location as the original step
+    if (step.groupId) {
+      // Find the group and add the copy there
+      const group = groups.find(g => g.id === step.groupId);
+      if (group) {
+        const stepIndex = group.steps.findIndex(s => s.id === step.id);
+        const newSteps = [...group.steps];
+        newSteps.splice(stepIndex + 1, 0, newStep);
+        onUpdateGroup(step.groupId, { steps: newSteps });
+        onStepsChange([...steps, newStep]);
+      }
+    } else {
+      // Add to ungrouped steps
+      const stepIndex = ungroupedSteps.findIndex(s => s.id === step.id);
+      const newUngroupedSteps = [...ungroupedSteps];
+      newUngroupedSteps.splice(stepIndex + 1, 0, newStep);
+      const allGroupedSteps = groups.flatMap(g => g.steps);
+      onStepsChange([...allGroupedSteps, ...newUngroupedSteps]);
+    }
+    
+    onCopyStep(newStep);
+  };
+
   const totalSteps = groups.reduce((sum, group) => sum + group.steps.length, 0) + ungroupedSteps.length;
 
   return (
@@ -166,22 +204,38 @@ const MainArea: React.FC<MainAreaProps> = ({
         ) : (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="space-y-6">
-              {groups.map((group) => (
-                <StepGroupComponent
-                  key={group.id}
-                  group={group}
-                  onUpdateGroup={onUpdateGroup}
-                  onDeleteGroup={onDeleteGroup}
-                  onUpdateStep={onUpdateStep}
-                  onDeleteStep={handleDeleteStep}
-                  onCopyStep={onCopyStep}
-                  onEditImage={onEditImage}
-                  onAddStepToGroup={onAddStepToGroup}
-                  onAddHtmlWithTemplate={onAddHtmlWithTemplate}
-                  onLoadImageToGroup={onLoadImage}
-                  onAddFileToGroup={onAddFileToGroup}
-                />
-              ))}
+              <Droppable droppableId="groups" type="group">
+                {(provided) => (
+                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-6">
+                    {groups.map((group, index) => (
+                      <Draggable key={group.id} draggableId={`group-${group.id}`} index={index}>
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                          >
+                            <StepGroupComponent
+                              group={group}
+                              onUpdateGroup={onUpdateGroup}
+                              onDeleteGroup={onDeleteGroup}
+                              onUpdateStep={onUpdateStep}
+                              onDeleteStep={handleDeleteStep}
+                              onCopyStep={handleCopyStep}
+                              onEditImage={onEditImage}
+                              onAddStepToGroup={onAddStepToGroup}
+                              onAddHtmlWithTemplate={onAddHtmlWithTemplate}
+                              onLoadImageToGroup={onLoadImage}
+                              onAddFileToGroup={onAddFileToGroup}
+                              dragHandleProps={provided.dragHandleProps}
+                            />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
 
               {ungroupedSteps.length > 0 && (
                 <div className="space-y-4">
@@ -194,8 +248,8 @@ const MainArea: React.FC<MainAreaProps> = ({
                       <div
                         {...provided.droppableProps}
                         ref={provided.innerRef}
-                        className={`space-y-4 transition-colors rounded-lg p-4 ${
-                          snapshot.isDraggingOver ? 'bg-slate-800/50 border-2 border-dashed border-slate-600' : ''
+                        className={`space-y-4 transition-colors rounded-lg p-4 min-h-[100px] ${
+                          snapshot.isDraggingOver ? 'bg-slate-800/50 border-2 border-dashed border-slate-600' : 'border-2 border-dashed border-slate-700/50'
                         }`}
                       >
                         {ungroupedSteps.map((step, index) => (
@@ -212,7 +266,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                                   step={step}
                                   onUpdate={onUpdateStep}
                                   onDelete={handleDeleteStep}
-                                  onCopy={onCopyStep}
+                                  onCopy={handleCopyStep}
                                   onEditImage={onEditImage}
                                   dragHandleProps={provided.dragHandleProps}
                                 />
@@ -221,6 +275,12 @@ const MainArea: React.FC<MainAreaProps> = ({
                           </Draggable>
                         ))}
                         {provided.placeholder}
+                        {ungroupedSteps.length === 0 && (
+                          <div className="text-center py-8 text-slate-400">
+                            <div className="text-2xl mb-2">📋</div>
+                            <p>Перетащите шаги сюда</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </Droppable>

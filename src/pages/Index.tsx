@@ -7,6 +7,7 @@ import PreviewMode from '../components/PreviewMode';
 import ImageEditor from '../components/ImageEditor';
 import HtmlTemplateSelector from '../components/HtmlTemplateSelector';
 import QRCodeGenerator from '../components/QRCodeGenerator';
+import FileEditor from '../components/FileEditor';
 import { Step } from '../types/Step';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
 import { useTheme, Theme } from '../hooks/useTheme';
@@ -28,6 +29,10 @@ const Index = () => {
   const [editingImageStepId, setEditingImageStepId] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{title: string, description: string, steps: Step[]} | null>(null);
   const [qrUrl, setQrUrl] = useState<string>('');
+  const [selectedGroupForTemplate, setSelectedGroupForTemplate] = useState<string | null>(null);
+  const [selectedGroupForImage, setSelectedGroupForImage] = useState<string | null>(null);
+  const [selectedGroupForFile, setSelectedGroupForFile] = useState<string | null>(null);
+  const [showFileEditor, setShowFileEditor] = useState(false);
   
   const { saveInstruction } = useInstructionStorage();
   const { theme } = useTheme();
@@ -112,6 +117,27 @@ const Index = () => {
   };
 
   const handleAddStepToGroup = (groupId: string, type: 'text' | 'image' | 'code' | 'html' | 'file') => {
+    if (type === 'html') {
+      // Открываем селектор HTML шаблонов с передачей groupId
+      setSelectedGroupForTemplate(groupId);
+      setShowHtmlTemplateSelector(true);
+      return;
+    }
+
+    if (type === 'image') {
+      // Открываем редактор изображений с передачей groupId
+      setSelectedGroupForImage(groupId);
+      setShowImageEditor(true);
+      return;
+    }
+
+    if (type === 'file') {
+      // Открываем редактор файлов с передачей groupId
+      setSelectedGroupForFile(groupId);
+      setShowFileEditor(true);
+      return;
+    }
+
     let newStep: Step;
 
     switch (type) {
@@ -134,33 +160,6 @@ const Index = () => {
           groupId
         };
         break;
-      case 'html':
-        newStep = {
-          id: Date.now().toString(),
-          type: 'html',
-          content: '<p>Введите HTML код здесь</p>',
-          title: 'HTML блок',
-          groupId
-        };
-        break;
-      case 'image':
-        newStep = {
-          id: Date.now().toString(),
-          type: 'image',
-          content: '',
-          title: 'Новое изображение',
-          groupId
-        };
-        break;
-      case 'file':
-        newStep = {
-          id: Date.now().toString(),
-          type: 'file',
-          content: 'Описание файла',
-          title: 'Новый файл',
-          groupId
-        };
-        break;
       default:
         return;
     }
@@ -170,6 +169,7 @@ const Index = () => {
     if (group) {
       updateGroup(groupId, { steps: [...group.steps, newStep] });
       setSteps(prev => [...prev, newStep]);
+      toast.success(`Шаг добавлен в группу`);
     }
   };
 
@@ -197,14 +197,59 @@ const Index = () => {
         type: 'image',
         content: '',
         imageUrl,
-        title: 'Новое изображение'
+        title: 'Новое изображение',
+        groupId: selectedGroupForImage || undefined
       };
-      setSteps(prev => [...prev, newStep]);
-      setUngroupedSteps(prev => [...prev, newStep]);
-      toast.success('Изображение добавлено');
+      
+      if (selectedGroupForImage) {
+        // Добавляем в группу
+        const group = groups.find(g => g.id === selectedGroupForImage);
+        if (group) {
+          updateGroup(selectedGroupForImage, { steps: [...group.steps, newStep] });
+          setSteps(prev => [...prev, newStep]);
+          toast.success('Изображение добавлено в группу');
+        }
+      } else {
+        // Добавляем в неформированные шаги
+        setSteps(prev => [...prev, newStep]);
+        setUngroupedSteps(prev => [...prev, newStep]);
+        toast.success('Изображение добавлено');
+      }
     }
     setShowImageEditor(false);
     setEditingImageStepId(null);
+    setSelectedGroupForImage(null);
+  };
+
+  const handleFileSave = (fileData: { name: string; type: string; data: string }) => {
+    const newStep: Step = {
+      id: Date.now().toString(),
+      type: 'file',
+      content: `<a href="${fileData.data}" download="${fileData.name}">📎 ${fileData.name}</a>`,
+      title: fileData.name,
+      fileName: fileData.name,
+      fileType: fileData.type,
+      fileData: fileData.data,
+      groupId: selectedGroupForFile || undefined
+    };
+    
+    if (selectedGroupForFile) {
+      // Добавляем в группу
+      const group = groups.find(g => g.id === selectedGroupForFile);
+      if (group) {
+        updateGroup(selectedGroupForFile, { steps: [...group.steps, newStep] });
+        setSteps(prev => [...prev, newStep]);
+        toast.success('Файл добавлен в группу');
+      }
+    } else {
+      // Добавляем в неформированные шаги
+      setSteps(prev => [...prev, newStep]);
+      setUngroupedSteps(prev => [...prev, newStep]);
+      toast.success('Файл добавлен');
+    }
+    
+    setShowFileEditor(false);
+    setSelectedGroupForFile(null);
   };
 
   const handlePasteImage = async () => {
@@ -396,13 +441,27 @@ const Index = () => {
       id: Date.now().toString(),
       type: 'html',
       content: htmlContent,
-      title: title
+      title: title,
+      groupId: selectedGroupForTemplate || undefined
     };
     
-    setSteps(prev => [...prev, newStep]);
-    setUngroupedSteps(prev => [...prev, newStep]);
+    if (selectedGroupForTemplate) {
+      // Добавляем в группу
+      const group = groups.find(g => g.id === selectedGroupForTemplate);
+      if (group) {
+        updateGroup(selectedGroupForTemplate, { steps: [...group.steps, newStep] });
+        setSteps(prev => [...prev, newStep]);
+        toast.success(`HTML-блок добавлен в группу: ${title}`);
+      }
+    } else {
+      // Добавляем в неформированные шаги
+      setSteps(prev => [...prev, newStep]);
+      setUngroupedSteps(prev => [...prev, newStep]);
+      toast.success(`Добавлен HTML-блок: ${title}`);
+    }
+    
     setShowHtmlTemplateSelector(false);
-    toast.success(`Добавлен HTML-блок: ${title}`);
+    setSelectedGroupForTemplate(null);
   };
 
   return (
@@ -438,6 +497,7 @@ const Index = () => {
           onCancel={() => {
             setShowImageEditor(false);
             setEditingImageStepId(null);
+            setSelectedGroupForImage(null);
           }}
           stepId={editingImageStepId}
           initialImageUrl={editingImageStepId ? getStepById(editingImageStepId)?.imageUrl : undefined}
@@ -447,7 +507,34 @@ const Index = () => {
       {showHtmlTemplateSelector && (
         <HtmlTemplateSelector
           onSelectTemplate={handleSelectHtmlTemplate}
-          onCancel={() => setShowHtmlTemplateSelector(false)}
+          onCancel={() => {
+            setShowHtmlTemplateSelector(false);
+            setSelectedGroupForTemplate(null);
+          }}
+        />
+      )}
+
+      {showFileEditor && (
+        <FileEditor
+          step={{
+            id: '',
+            type: 'file',
+            content: '',
+            title: 'Новый файл'
+          }}
+          onSave={(step) => {
+            if (step.fileData && step.fileName && step.fileType) {
+              handleFileSave({
+                name: step.fileName,
+                type: step.fileType,
+                data: step.fileData
+              });
+            }
+          }}
+          onCancel={() => {
+            setShowFileEditor(false);
+            setSelectedGroupForFile(null);
+          }}
         />
       )}
 
@@ -460,8 +547,14 @@ const Index = () => {
       
       <Sidebar
         onAddStep={handleAddStep}
-        onAddHtmlWithTemplate={() => setShowHtmlTemplateSelector(true)}
-        onLoadImage={() => setShowImageEditor(true)}
+        onAddHtmlWithTemplate={() => {
+          setSelectedGroupForTemplate(null);
+          setShowHtmlTemplateSelector(true);
+        }}
+        onLoadImage={() => {
+          setSelectedGroupForImage(null);
+          setShowImageEditor(true);
+        }}
         onPasteImage={handlePasteImage}
         onSave={handleSave}
         onExport={handleExport}
@@ -492,6 +585,18 @@ const Index = () => {
         onDeleteStep={deleteStep}
         onCopyStep={copyStep}
         onAddStepToGroup={handleAddStepToGroup}
+        onAddHtmlWithTemplate={(groupId) => {
+          setSelectedGroupForTemplate(groupId || null);
+          setShowHtmlTemplateSelector(true);
+        }}
+        onLoadImage={(groupId) => {
+          setSelectedGroupForImage(groupId || null);
+          setShowImageEditor(true);
+        }}
+        onAddFileToGroup={(groupId) => {
+          setSelectedGroupForFile(groupId);
+          setShowFileEditor(true);
+        }}
       />
     </div>
   );

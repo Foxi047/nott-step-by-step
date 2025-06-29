@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Edit, Trash2, Plus, Palette } from 'lucide-react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Plus, Palette, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -23,6 +23,7 @@ interface StepGroupProps {
   onAddHtmlWithTemplate?: (groupId: string) => void;
   onLoadImageToGroup?: (groupId: string) => void;
   onAddFileToGroup?: (groupId: string) => void;
+  dragHandleProps?: any;
 }
 
 const StepGroupComponent: React.FC<StepGroupProps> = ({
@@ -36,7 +37,8 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
   onAddStepToGroup,
   onAddHtmlWithTemplate,
   onLoadImageToGroup,
-  onAddFileToGroup
+  onAddFileToGroup,
+  dragHandleProps
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(group.title);
@@ -102,6 +104,10 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
       <Collapsible open={!group.isCollapsed}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
+            <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing">
+              <GripVertical className="w-4 h-4 text-purple-400" />
+            </div>
+            
             <CollapsibleTrigger onClick={handleToggleCollapse}>
               {group.isCollapsed ? (
                 <ChevronRight className="w-4 h-4 text-purple-400" />
@@ -221,8 +227,8 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className={`space-y-4 transition-colors rounded-lg p-2 ${
-                  snapshot.isDraggingOver ? 'bg-purple-900/20 border-2 border-dashed border-purple-500' : ''
+                className={`space-y-4 transition-colors rounded-lg p-2 min-h-[100px] ${
+                  snapshot.isDraggingOver ? 'bg-purple-900/20 border-2 border-dashed border-purple-500' : 'border-2 border-dashed border-purple-700/30'
                 }`}
               >
                 {group.steps.map((step, index) => (
