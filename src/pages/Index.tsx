@@ -35,6 +35,7 @@ const Index = () => {
   const [selectedGroupForImage, setSelectedGroupForImage] = useState<string | null>(null);
   const [selectedGroupForFile, setSelectedGroupForFile] = useState<string | null>(null);
   const [showFileEditor, setShowFileEditor] = useState(false);
+  const [previewTheme, setPreviewTheme] = useState<Theme>('dark');
   
   const { saveInstruction } = useInstructionStorage();
   const { theme } = useTheme();
@@ -321,22 +322,6 @@ const Index = () => {
     }
   };
 
-  const handleSaveWithTheme = (selectedTheme: Theme) => {
-    const allSteps = getAllSteps();
-    if (allSteps.length === 0) {
-      toast.error('Добавьте хотя бы один шаг');
-      return;
-    }
-    
-    const success = saveInstruction(instructionTitle, instructionDescription, allSteps);
-    if (success) {
-      clearAutosave();
-      toast.success(`Инструкция сохранена с темой: ${selectedTheme === 'light' ? 'Светлая' : selectedTheme === 'gray' ? 'Серая' : 'Тёмная'}`);
-    } else {
-      toast.error('Ошибка сохранения');
-    }
-  };
-
   const handleExportWithOptions = (options: {
     format: 'html' | 'markdown' | 'json';
     password?: string;
@@ -358,7 +343,7 @@ const Index = () => {
       
       switch (options.format) {
         case 'html':
-          content = exportToHTML(instructionTitle, instructionDescription, allSteps, groups, options.password);
+          content = exportToHTML(instructionTitle, instructionDescription, allSteps, groups, options.password, options.theme);
           mimeType = 'text/html';
           extension = 'html';
           break;
@@ -484,6 +469,17 @@ const Index = () => {
     setSelectedGroupForTemplate(null);
   };
 
+  // Обработчик экспорта из предпросмотра
+  const handlePreviewExport = (options: {
+    format: 'html' | 'markdown' | 'json';
+    password?: string;
+    theme: 'light' | 'gray' | 'dark';
+  }) => {
+    setPreviewTheme(options.theme);
+    setShowSaveOptions(true);
+    setShowPreview(false);
+  };
+
   return (
     <div className={`min-h-screen flex ${theme}`} style={{
       background: 'var(--bg-primary)',
@@ -508,7 +504,7 @@ const Index = () => {
           steps={previewData.steps}
           groups={groups}
           onClose={() => setShowPreview(false)}
-          onSaveWithTheme={handleSaveWithTheme}
+          onExport={handlePreviewExport}
         />
       )}
 
@@ -570,7 +566,14 @@ const Index = () => {
         <SaveOptionsDialog
           isOpen={showSaveOptions}
           onClose={() => setShowSaveOptions(false)}
-          onSave={handleExportWithOptions}
+          onSave={(options) => {
+            // Применяем выбранную тему, если она была изменена в предпросмотре
+            const finalOptions = {
+              ...options,
+              theme: previewTheme || options.theme
+            };
+            handleExportWithOptions(finalOptions);
+          }}
         />
       )}
       

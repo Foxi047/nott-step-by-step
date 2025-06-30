@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Download, Copy, Palette, Save, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Copy, Palette, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import { Step, StepGroup } from '../types/Step';
 import { toast } from 'sonner';
 import { useTheme, Theme } from '../hooks/useTheme';
@@ -13,7 +13,11 @@ interface PreviewModeProps {
   steps: Step[];
   groups?: StepGroup[];
   onClose: () => void;
-  onSaveWithTheme?: (theme: Theme) => void;
+  onExport?: (options: {
+    format: 'html' | 'markdown' | 'json';
+    password?: string;
+    theme: 'light' | 'gray' | 'dark';
+  }) => void;
 }
 
 const PreviewMode: React.FC<PreviewModeProps> = ({
@@ -22,7 +26,7 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
   steps,
   groups = [],
   onClose,
-  onSaveWithTheme
+  onExport
 }) => {
   const { theme, setTheme } = useTheme();
   const [previewTheme, setPreviewTheme] = useState<Theme>(theme);
@@ -42,10 +46,14 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
     setTheme(newTheme);
   };
 
-  const handleSaveWithCurrentTheme = () => {
-    if (onSaveWithTheme) {
-      onSaveWithTheme(previewTheme);
-      toast.success(`Инструкция сохранена с темой: ${previewTheme === 'light' ? 'Светлая' : previewTheme === 'gray' ? 'Серая' : 'Тёмная'}`);
+  const handleExportClick = () => {
+    if (onExport) {
+      // Вызываем функцию экспорта с текущей темой предпросмотра
+      // Диалог выбора параметров откроется в родительском компоненте
+      onExport({
+        format: 'html',
+        theme: previewTheme
+      });
     }
   };
 
@@ -59,291 +67,6 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
       }
       return newSet;
     });
-  };
-
-  const handleExportHTML = () => {
-    const themeStyles = getThemeStyles(previewTheme);
-    const html = `
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title}</title>
-    <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6; 
-            margin: 0; 
-            padding: 40px;
-            background: ${themeStyles.bg};
-            color: ${themeStyles.text};
-        }
-        .container { max-width: 800px; margin: 0 auto; background: ${themeStyles.cardBg}; padding: 40px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        h1 { color: ${themeStyles.text}; margin-bottom: 10px; font-size: 2rem; }
-        .description { color: ${themeStyles.secondary}; margin-bottom: 30px; font-size: 1.1rem; }
-        
-        .group {
-            margin: 30px 0;
-            border: 2px solid ${themeStyles.border};
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .group-header {
-            background: ${themeStyles.border};
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-            font-weight: 600;
-            color: ${themeStyles.text};
-        }
-        .group-header:hover { background: ${themeStyles.secondary}; }
-        .group-toggle { margin-right: 10px; transition: transform 0.2s; }
-        .group-toggle.collapsed { transform: rotate(-90deg); }
-        .group-content { 
-            background: ${themeStyles.cardBg}; 
-            transition: max-height 0.3s ease-out;
-            overflow: hidden;
-        }
-        .group-content.collapsed { max-height: 0; }
-        .group-content.expanded { max-height: 1000px; }
-        
-        .step { 
-            margin: 20px; 
-            padding: 20px; 
-            border: 1px solid ${themeStyles.border};
-            border-radius: 8px;
-            background: ${themeStyles.bg};
-        }
-        .step-header { 
-            display: flex; 
-            align-items: center; 
-            margin-bottom: 15px; 
-            font-weight: 600; 
-            color: ${themeStyles.text};
-            font-size: 1.1rem;
-        }
-        .step-number { 
-            background: #3b82f6; 
-            color: white; 
-            width: 24px; 
-            height: 24px; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 0.9rem; 
-            margin-right: 10px;
-        }
-        .step-content { margin-left: 34px; }
-        .code-container {
-            background: #1e293b;
-            border-radius: 6px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-        .code-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 15px;
-            background: #334155;
-        }
-        .language-tag {
-            background: #3b82f6;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-        }
-        .copy-btn {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #22c55e;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: background-color 0.2s;
-        }
-        .copy-btn:hover { background: #16a34a; }
-        pre { 
-            background: #1e293b; 
-            color: #e2e8f0; 
-            padding: 20px; 
-            margin: 0;
-            overflow-x: auto; 
-            font-family: 'Fira Code', Consolas, monospace;
-            font-size: 0.9rem;
-        }
-        img { 
-            max-width: 100%; 
-            height: auto; 
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        .step-text {
-            white-space: pre-wrap;
-            font-size: 1rem;
-            line-height: 1.7;
-        }
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #22c55e;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-        }
-        .toast.show { transform: translateX(0); }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>${title}</h1>
-        ${description ? `<div class="description">${description}</div>` : ''}
-        
-        ${groups.length > 0 ? groups.map((group: StepGroup) => `
-            <div class="group">
-                <div class="group-header" onclick="toggleGroup('${group.id}')">
-                    <span class="group-toggle" id="toggle-${group.id}">▼</span>
-                    ${group.title}
-                </div>
-                <div class="group-content expanded" id="content-${group.id}">
-                    ${group.steps.map((step: Step, index: number) => `
-                        <div class="step">
-                            <div class="step-header">
-                                <div class="step-number">${index + 1}</div>
-                                ${step.title || 'Шаг'}
-                            </div>
-                            <div class="step-content">
-                                ${step.type === 'code' ? `
-                                    <div class="code-container">
-                                        <div class="code-header">
-                                            ${step.language ? `<div class="language-tag">${step.language}</div>` : ''}
-                                            <button onclick="copyCode(this)" class="copy-btn">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                                    <path d="m5 15-1-1v-8c0-1 1-2 2-2h8l1 1"></path>
-                                                </svg>
-                                                Копировать
-                                            </button>
-                                        </div>
-                                        <pre><code>${step.content}</code></pre>
-                                    </div>
-                                ` : step.type === 'image' && step.imageUrl ? `
-                                    <img src="${step.imageUrl}" alt="${step.title || ''}" />
-                                    ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
-                                ` : `
-                                    <div class="step-text">${step.content}</div>
-                                `}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `).join('') : ''}
-        
-        ${steps.filter(step => !step.groupId).map((step: Step, index: number) => `
-            <div class="step">
-                <div class="step-header">
-                    <div class="step-number">${groups.reduce((acc, group) => acc + group.steps.length, 0) + index + 1}</div>
-                    ${step.title || 'Шаг'}
-                </div>
-                <div class="step-content">
-                    ${step.type === 'code' ? `
-                        <div class="code-container">
-                            <div class="code-header">
-                                ${step.language ? `<div class="language-tag">${step.language}</div>` : ''}
-                                <button onclick="copyCode(this)" class="copy-btn">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                        <path d="m5 15-1-1v-8c0-1 1-2 2-2h8l1 1"></path>
-                                    </svg>
-                                    Копировать
-                                </button>
-                            </div>
-                            <pre><code>${step.content}</code></pre>
-                        </div>
-                    ` : step.type === 'image' && step.imageUrl ? `
-                        <img src="${step.imageUrl}" alt="${step.title || ''}" />
-                        ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
-                    ` : `
-                        <div class="step-text">${step.content}</div>
-                    `}
-                </div>
-            </div>
-        `).join('')}
-    </div>
-    
-    <script>
-        function toggleGroup(groupId) {
-            const content = document.getElementById('content-' + groupId);
-            const toggle = document.getElementById('toggle-' + groupId);
-            
-            if (content.classList.contains('collapsed')) {
-                content.classList.remove('collapsed');
-                content.classList.add('expanded');
-                toggle.textContent = '▼';
-            } else {
-                content.classList.remove('expanded');
-                content.classList.add('collapsed');
-                toggle.textContent = '▶';
-            }
-        }
-        
-        function copyCode(button) {
-            const codeBlock = button.closest('.code-container').querySelector('code');
-            const text = codeBlock.textContent;
-            
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('Код скопирован в буфер обмена!');
-            }).catch(() => {
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                showToast('Код скопирован в буфер обмена!');
-            });
-        }
-        
-        function showToast(message) {
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) existingToast.remove();
-            
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => toast.classList.add('show'), 100);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-    </script>
-</body>
-</html>`;
-
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const getThemeStyles = (theme: Theme) => {
@@ -397,23 +120,14 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
             </Select>
           </div>
           
-          {onSaveWithTheme && (
-            <Button
-              onClick={handleSaveWithCurrentTheme}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Сохранить с темой
-            </Button>
-          )}
-          
           <Button
-            onClick={handleExportHTML}
+            onClick={handleExportClick}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Download className="w-4 h-4 mr-2" />
-            Экспорт HTML
+            Экспорт
           </Button>
+          
           <Button
             variant="ghost"
             onClick={onClose}

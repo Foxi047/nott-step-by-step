@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Palette, Info, HelpCircle, Download, Smartphone } from 'lucide-react';
+import { X, Palette, Info, HelpCircle, Download, Smartphone, Install } from 'lucide-react';
 import { useTheme, Theme } from '../hooks/useTheme';
 import { toast } from 'sonner';
 
@@ -15,6 +14,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'appearance' | 'pwa' | 'help' | 'about'>('appearance');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -23,10 +23,23 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
       setIsInstallable(true);
     };
 
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setIsInstallable(false);
+      toast.success('Приложение успешно установлено!');
+    };
+
+    // Проверяем, установлено ли приложение
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
@@ -35,16 +48,46 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   };
 
   const handleInstallPWA = async () => {
-    if (deferredPrompt) {
+    if (!deferredPrompt) {
+      toast.error('Установка недоступна в этом браузере');
+      return;
+    }
+
+    try {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
+      
       if (outcome === 'accepted') {
-        toast.success('Приложение установлено!');
+        toast.success('Приложение устанавливается...');
         setIsInstallable(false);
+        setDeferredPrompt(null);
+      } else {
+        toast.info('Установка отменена');
       }
-      setDeferredPrompt(null);
+    } catch (error) {
+      toast.error('Ошибка при установке приложения');
+    }
+  };
+
+  const getInstallStatus = () => {
+    if (isInstalled) {
+      return {
+        text: 'Приложение установлено',
+        color: 'text-green-400',
+        icon: '✓'
+      };
+    } else if (isInstallable) {
+      return {
+        text: 'Готово к установке',
+        color: 'text-blue-400',
+        icon: '⬇'
+      };
     } else {
-      toast.info('Приложение уже установлено или недоступно для установки');
+      return {
+        text: 'Установка недоступна',
+        color: 'text-slate-400',
+        icon: '○'
+      };
     }
   };
 
@@ -71,77 +114,118 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
     </div>
   );
 
-  const renderPWATab = () => (
-    <div className="space-y-4">
-      <h3 className="font-medium text-white mb-4">Progressive Web App (PWA)</h3>
-      
-      <div className="space-y-4">
-        <div className="p-4 bg-slate-700 rounded-lg">
-          <h4 className="font-medium text-white mb-2">Установка приложения</h4>
-          <p className="text-sm text-slate-300 mb-3">
-            Установите приложение на ваше устройство для оффлайн работы и быстрого доступа.
+  const renderPWATab = () => {
+    const status = getInstallStatus();
+    
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <div className="mb-4">
+            <Smartphone className="w-16 h-16 mx-auto text-blue-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-white mb-2">Progressive Web App</h3>
+          <p className="text-slate-300 mb-4">
+            Установите приложение для полноценной работы без браузера
           </p>
           
-          {isInstallable ? (
+          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-700 ${status.color} text-sm font-medium mb-6`}>
+            <span>{status.icon}</span>
+            {status.text}
+          </div>
+        </div>
+
+        <div className="text-center">
+          {isInstallable && (
             <Button 
               onClick={handleInstallPWA}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
+              size="lg"
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Install className="w-5 h-5 mr-2" />
               Установить приложение
             </Button>
-          ) : (
-            <p className="text-sm text-slate-400">
-              Приложение уже установлено или недоступно для установки в этом браузере.
-            </p>
+          )}
+          
+          {isInstalled && (
+            <div className="p-4 bg-green-900/30 rounded-lg text-green-200">
+              <p className="font-medium">Приложение уже установлено!</p>
+              <p className="text-sm mt-1">Вы можете запускать его прямо с рабочего стола</p>
+            </div>
+          )}
+          
+          {!isInstallable && !isInstalled && (
+            <div className="p-4 bg-slate-700 rounded-lg">
+              <p className="text-slate-300 mb-3">
+                Установка недоступна в этом браузере или уже выполнена.
+              </p>
+              <p className="text-sm text-slate-400">
+                Попробуйте открыть сайт в Chrome, Edge или другом поддерживаемом браузере.
+              </p>
+            </div>
           )}
         </div>
 
-        <div className="space-y-3 text-sm text-slate-300">
-          <h4 className="font-medium text-white">Инструкция по установке:</h4>
-          
-          <div className="space-y-2">
-            <p><strong>На компьютере (Chrome/Edge):</strong></p>
-            <ul className="list-disc list-inside space-y-1 pl-4">
-              <li>Нажмите на иконку установки в адресной строке</li>
-              <li>Или используйте кнопку "Установить приложение" выше</li>
-              <li>Приложение появится в меню "Пуск" и на рабочем столе</li>
+        <div className="space-y-4 text-sm text-slate-300">
+          <div className="p-4 bg-slate-700 rounded-lg">
+            <h4 className="font-medium text-white mb-3">Преимущества установки:</h4>
+            <ul className="space-y-2">
+              <li className="flex items-center gap-2">
+                <span className="text-green-400">✓</span>
+                Работа без интернета
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-green-400">✓</span>
+                Быстрый запуск с рабочего стола
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-green-400">✓</span>
+                Автосохранение проектов локально
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-green-400">✓</span>
+                Полноэкранный режим работы
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-green-400">✓</span>
+                Уведомления и интеграция с ОС
+              </li>
             </ul>
           </div>
 
-          <div className="space-y-2">
-            <p><strong>На Android:</strong></p>
-            <ul className="list-disc list-inside space-y-1 pl-4">
-              <li>Откройте меню браузера (три точки)</li>
-              <li>Выберите "Добавить на главный экран"</li>
-              <li>Или используйте кнопку "Установить приложение" выше</li>
-            </ul>
-          </div>
+          <div className="space-y-3">
+            <h4 className="font-medium text-white">Ручная установка:</h4>
+            
+            <div className="space-y-2">
+              <p><strong>На компьютере (Chrome/Edge):</strong></p>
+              <ul className="list-disc list-inside space-y-1 pl-4 text-slate-400">
+                <li>Нажмите на иконку установки в адресной строке</li>
+                <li>Или используйте меню браузера → "Установить приложение"</li>
+                <li>Приложение появится в меню "Пуск" и на рабочем столе</li>
+              </ul>
+            </div>
 
-          <div className="space-y-2">
-            <p><strong>На iPhone/iPad (Safari):</strong></p>
-            <ul className="list-disc list-inside space-y-1 pl-4">
-              <li>Нажмите кнопку "Поделиться" (квадрат со стрелкой)</li>
-              <li>Выберите "На экран «Домой»"</li>
-              <li>Нажмите "Добавить"</li>
-            </ul>
-          </div>
+            <div className="space-y-2">
+              <p><strong>На Android:</strong></p>
+              <ul className="list-disc list-inside space-y-1 pl-4 text-slate-400">
+                <li>Откройте меню браузера (три точки)</li>
+                <li>Выберите "Добавить на главный экран"</li>
+                <li>Или используйте уведомление об установке</li>
+              </ul>
+            </div>
 
-          <div className="p-3 bg-blue-900/30 rounded-lg">
-            <p className="text-sm text-blue-200">
-              <strong>Преимущества установки:</strong>
-            </p>
-            <ul className="list-disc list-inside space-y-1 pl-4 text-xs text-blue-300 mt-2">
-              <li>Работа без интернета</li>
-              <li>Быстрый запуск с рабочего стола</li>
-              <li>Автосохранение проектов локально</li>
-              <li>Полноэкранный режим работы</li>
-            </ul>
+            <div className="space-y-2">
+              <p><strong>На iPhone/iPad (Safari):</strong></p>
+              <ul className="list-disc list-inside space-y-1 pl-4 text-slate-400">
+                <li>Нажмите кнопку "Поделиться" (квадрат со стрелкой)</li>
+                <li>Выберите "На экран «Домой»"</li>
+                <li>Нажмите "Добавить"</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderHelpTab = () => (
     <div className="space-y-4 text-sm text-slate-300">

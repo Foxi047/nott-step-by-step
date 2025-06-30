@@ -1,514 +1,522 @@
+
 import { Step, StepGroup } from '../types/Step';
 
-export const exportToHTML = (title: string, description: string, steps: Step[], groups?: StepGroup[], password?: string) => {
-  const stepsByGroup = new Map<string, Step[]>();
-  const ungroupedSteps: Step[] = [];
-  
-  // Группируем шаги
-  steps.forEach(step => {
-    if (step.groupId) {
-      if (!stepsByGroup.has(step.groupId)) {
-        stepsByGroup.set(step.groupId, []);
-      }
-      stepsByGroup.get(step.groupId)!.push(step);
-    } else {
-      ungroupedSteps.push(step);
+export const exportToHTML = (
+  title: string, 
+  description: string, 
+  steps: Step[], 
+  groups: StepGroup[] = [], 
+  password?: string,
+  selectedTheme: 'light' | 'gray' | 'dark' = 'dark'
+): string => {
+  const getThemeStyles = (theme: 'light' | 'gray' | 'dark') => {
+    switch (theme) {
+      case 'light':
+        return {
+          bg: '#ffffff',
+          text: '#1e293b',
+          secondary: '#64748b',
+          cardBg: '#f8fafc',
+          border: '#e2e8f0'
+        };
+      case 'gray':
+        return {
+          bg: '#64748b',
+          text: '#f1f5f9',
+          secondary: '#cbd5e1',
+          cardBg: '#475569',
+          border: '#334155'
+        };
+      case 'dark':
+        return {
+          bg: '#0f172a',
+          text: '#f1f5f9',
+          secondary: '#94a3b8',
+          cardBg: '#1e293b',
+          border: '#334155'
+        };
     }
-  });
+  };
 
-  const getStepHTML = (step: Step) => {
-    const getStepClasses = () => {
-      const baseClasses = 'step border rounded-lg p-4 mb-4 transition-colors';
-      
-      if (!step.style?.type || step.style.type === 'default') {
-        return `${baseClasses} step-default`;
-      }
-      
-      switch (step.style.type) {
-        case 'info':
-          return `${baseClasses} step-info`;
-        case 'warning':
-          return `${baseClasses} step-warning`;
-        case 'success':
-          return `${baseClasses} step-success`;
-        case 'error':
-          return `${baseClasses} step-error`;
-        default:
-          return `${baseClasses} step-default`;
-      }
-    };
+  const themeStyles = getThemeStyles(selectedTheme);
 
-    const getStepIcon = () => {
-      if (step.style?.icon) {
-        return step.style.icon;
-      }
+  const generateMainContent = () => `
+    <div class="container">
+      <h1>${title}</h1>
+      ${description ? `<div class="description">${description}</div>` : ''}
       
-      switch (step.type) {
-        case 'text': return '📝';
-        case 'code': return '💻';
-        case 'image': return '🖼️';
-        case 'html': return '🌐';
-        case 'file': return '📎';
-        default: return '📄';
-      }
-    };
-
-    let content = '';
-    
-    switch (step.type) {
-      case 'text':
-        content = `<p>${step.content?.replace(/\n/g, '<br>') || ''}</p>`;
-        break;
-      case 'code':
-        content = `
-          <div class="code-wrapper">
-            <div class="code-header">
-              <span class="code-language">${step.language || 'javascript'}</span>
-              <button class="copy-btn" onclick="copyToClipboard(this)" data-code="${step.content?.replace(/"/g, '&quot;') || ''}">📋</button>
-            </div>
-            <pre class="code-block"><code class="language-${step.language || 'javascript'}">${step.content || ''}</code></pre>
+      ${groups.length > 0 ? groups.map((group: StepGroup) => `
+        <div class="group">
+          <div class="group-header" onclick="toggleGroup('${group.id}')">
+            <span class="group-toggle" id="toggle-${group.id}">▼</span>
+            ${group.title}
           </div>
-        `;
-        break;
-      case 'html':
-        content = step.content || '';
-        break;
-      case 'image':
-        content = `<div class="image-container">
-          ${step.imageUrl ? `<img src="${step.imageUrl}" alt="${step.title || 'Изображение'}" class="step-image">` : ''}
-          ${step.content ? `<p class="image-caption">${step.content}</p>` : ''}
-        </div>`;
-        break;
-      case 'file':
-        content = `<div class="file-attachment">
-          <span class="file-icon">📎</span>
-          <span class="file-name">${step.title || 'Файл'}</span>
-          ${step.content ? `<p class="file-description">${step.content}</p>` : ''}
-        </div>`;
-        break;
-    }
-
-    return `
-      <div class="${getStepClasses()}">
-        <div class="step-header">
-          <span class="step-icon">${getStepIcon()}</span>
-          <span class="step-type">${step.type}</span>
+          <div class="group-content expanded" id="content-${group.id}">
+            ${group.steps.map((step: Step, index: number) => `
+              <div class="step">
+                <div class="step-header">
+                  <div class="step-number">${index + 1}</div>
+                  ${step.title || 'Шаг'}
+                </div>
+                <div class="step-content">
+                  ${step.type === 'code' ? `
+                    <div class="code-container">
+                      <div class="code-header">
+                        ${step.language ? `<div class="language-tag">${step.language}</div>` : ''}
+                        <button onclick="copyCode(this)" class="copy-btn">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="m5 15-1-1v-8c0-1 1-2 2-2h8l1 1"></path>
+                          </svg>
+                          Копировать
+                        </button>
+                      </div>
+                      <pre><code>${step.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+                    </div>
+                  ` : step.type === 'image' && step.imageUrl ? `
+                    <img src="${step.imageUrl}" alt="${step.title || ''}" />
+                    ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
+                  ` : step.type === 'html' ? `
+                    <div class="html-content">${step.content}</div>
+                  ` : step.type === 'file' && step.fileData ? `
+                    <div class="file-content">
+                      <a href="${step.fileData}" download="${step.fileName || 'file'}" class="file-link">
+                        📎 ${step.fileName || 'Скачать файл'}
+                      </a>
+                      ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
+                    </div>
+                  ` : `
+                    <div class="step-text">${step.content}</div>
+                  `}
+                </div>
+              </div>
+            `).join('')}
+          </div>
         </div>
-        ${step.title ? `<h3 class="step-title">${step.title}</h3>` : ''}
-        <div class="step-content">${content}</div>
-      </div>
-    `;
-  };
-
-  const getGroupHTML = (group: StepGroup) => {
-    const groupSteps = stepsByGroup.get(group.id) || [];
-    
-    const getGroupClasses = () => {
-      const baseClasses = 'group rounded-lg p-4 mb-4 border-2 shadow-lg';
+      `).join('') : ''}
       
-      if (!group.style?.type || group.style.type === 'default') {
-        return `${baseClasses} group-default`;
-      }
-      
-      switch (group.style.type) {
-        case 'info':
-          return `${baseClasses} group-info`;
-        case 'warning':
-          return `${baseClasses} group-warning`;
-        case 'success':
-          return `${baseClasses} group-success`;
-        case 'error':
-          return `${baseClasses} group-error`;
-        default:
-          return `${baseClasses} group-default`;
-      }
-    };
-
-    const getGroupIcon = () => {
-      if (group.style?.icon) {
-        return group.style.icon;
-      }
-      return '📁';
-    };
-
-    return `
-      <div class="${getGroupClasses()}">
-        <div class="group-header" onclick="toggleGroup('${group.id}')">
-          <span class="group-toggle" id="toggle-${group.id}">▼</span>
-          <span class="group-icon">${getGroupIcon()}</span>
-          <h2 class="group-title">${group.title}</h2>
-          <span class="group-count">${groupSteps.length} шагов</span>
+      ${steps.filter(step => !step.groupId).map((step: Step, index: number) => `
+        <div class="step">
+          <div class="step-header">
+            <div class="step-number">${groups.reduce((acc, group) => acc + group.steps.length, 0) + index + 1}</div>
+            ${step.title || 'Шаг'}
+          </div>
+          <div class="step-content">
+            ${step.type === 'code' ? `
+              <div class="code-container">
+                <div class="code-header">
+                  ${step.language ? `<div class="language-tag">${step.language}</div>` : ''}
+                  <button onclick="copyCode(this)" class="copy-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="m5 15-1-1v-8c0-1 1-2 2-2h8l1 1"></path>
+                    </svg>
+                    Копировать
+                  </button>
+                </div>
+                <pre><code>${step.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+              </div>
+            ` : step.type === 'image' && step.imageUrl ? `
+              <img src="${step.imageUrl}" alt="${step.title || ''}" />
+              ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
+            ` : step.type === 'html' ? `
+              <div class="html-content">${step.content}</div>
+            ` : step.type === 'file' && step.fileData ? `
+              <div class="file-content">
+                <a href="${step.fileData}" download="${step.fileName || 'file'}" class="file-link">
+                  📎 ${step.fileName || 'Скачать файл'}
+                </a>
+                ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
+              </div>
+            ` : `
+              <div class="step-text">${step.content}</div>
+            `}
+          </div>
         </div>
-        <div class="group-steps" id="steps-${group.id}">
-          ${groupSteps.map(step => getStepHTML(step)).join('')}
-        </div>
-      </div>
-    `;
-  };
+      `).join('')}
+    </div>
+  `;
 
-  const passwordScript = password ? `
-    <script>
-      (function() {
-        const correctPassword = '${password}';
-        const userPassword = prompt('Введите пароль для просмотра инструкции:');
-        if (userPassword !== correctPassword) {
-          document.body.innerHTML = '<div style="text-align: center; padding: 50px; color: #f1f5f9; background: #0f172a; min-height: 100vh;"><h1>Доступ запрещен</h1><p>Неверный пароль</p></div>';
-          return;
-        }
-      })();
-    </script>
-  ` : '';
-
-  const html = `
-<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
     <style>
-        body {
+        body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
-            color: #f1f5f9;
-            background: #0f172a;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            line-height: 1.6; 
+            margin: 0; 
+            padding: 40px;
+            background: ${themeStyles.bg};
+            color: ${themeStyles.text};
         }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #334155;
-            padding-bottom: 20px;
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: ${themeStyles.cardBg}; 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
         }
-        .title {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #f1f5f9;
+        h1 { 
+            color: ${themeStyles.text}; 
+            margin-bottom: 10px; 
+            font-size: 2rem; 
         }
-        .description {
-            font-size: 1.1rem;
-            color: #94a3b8;
-            margin-bottom: 0;
-        }
-        
-        /* Step Styles */
-        .step {
-            margin-bottom: 20px;
-        }
-        .step-default {
-            background: #1e293b;
-            border-color: #334155;
-        }
-        .step-info {
-            background: rgba(30, 58, 138, 0.3);
-            border-color: rgba(29, 78, 216, 0.7);
-        }
-        .step-warning {
-            background: rgba(133, 77, 14, 0.3);
-            border-color: rgba(217, 119, 6, 0.7);
-        }
-        .step-success {
-            background: rgba(20, 83, 45, 0.3);
-            border-color: rgba(34, 197, 94, 0.7);
-        }
-        .step-error {
-            background: rgba(127, 29, 29, 0.3);
-            border-color: rgba(239, 68, 68, 0.7);
+        .description { 
+            color: ${themeStyles.secondary}; 
+            margin-bottom: 30px; 
+            font-size: 1.1rem; 
         }
         
-        /* Group Styles */
         .group {
-            background: rgba(71, 85, 105, 0.5);
-            border-color: rgba(147, 51, 234, 0.3);
-        }
-        .group-default {
-            background: rgba(71, 85, 105, 0.5);
-            border-color: rgba(147, 51, 234, 0.3);
-        }
-        .group-info {
-            background: rgba(30, 58, 138, 0.4);
-            border-color: rgba(29, 78, 216, 0.5);
-        }
-        .group-warning {
-            background: rgba(133, 77, 14, 0.4);
-            border-color: rgba(217, 119, 6, 0.5);
-        }
-        .group-success {
-            background: rgba(20, 83, 45, 0.4);
-            border-color: rgba(34, 197, 94, 0.5);
-        }
-        .group-error {
-            background: rgba(127, 29, 29, 0.4);
-            border-color: rgba(239, 68, 68, 0.5);
-        }
-        
-        .step-header, .group-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
+            margin: 30px 0;
+            border: 2px solid ${themeStyles.border};
+            border-radius: 12px;
+            overflow: hidden;
         }
         .group-header {
+            background: ${themeStyles.border};
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
             cursor: pointer;
             user-select: none;
-        }
-        .group-toggle {
-            font-size: 1rem;
-            transition: transform 0.2s;
-        }
-        .group-toggle.collapsed {
-            transform: rotate(-90deg);
-        }
-        .step-icon, .group-icon {
-            font-size: 1.2rem;
-        }
-        .step-type {
-            font-size: 0.875rem;
-            color: #94a3b8;
-            text-transform: capitalize;
-        }
-        .group-title {
-            font-size: 1.25rem;
             font-weight: 600;
-            color: #c084fc;
-            margin: 0;
+            color: ${themeStyles.text};
         }
-        .group-count {
-            font-size: 0.75rem;
-            color: #c084fc;
-            background: rgba(147, 51, 234, 0.3);
-            padding: 2px 8px;
-            border-radius: 4px;
-            margin-left: auto;
+        .group-header:hover { background: ${themeStyles.secondary}; }
+        .group-toggle { margin-right: 10px; transition: transform 0.2s; }
+        .group-toggle.collapsed { transform: rotate(-90deg); }
+        .group-content { 
+            background: ${themeStyles.cardBg}; 
+            transition: max-height 0.3s ease-out;
+            overflow: hidden;
         }
-        .step-title {
+        .group-content.collapsed { max-height: 0; }
+        .group-content.expanded { max-height: 1000px; }
+        
+        .step { 
+            margin: 20px; 
+            padding: 20px; 
+            border: 1px solid ${themeStyles.border};
+            border-radius: 8px;
+            background: ${themeStyles.bg};
+        }
+        .step-header { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 15px; 
+            font-weight: 600; 
+            color: ${themeStyles.text};
             font-size: 1.1rem;
-            font-weight: 600;
-            margin: 0 0 10px 0;
-            color: #f1f5f9;
         }
-        .step-content {
-            color: #e2e8f0;
+        .step-number { 
+            background: #3b82f6; 
+            color: white; 
+            width: 24px; 
+            height: 24px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 0.9rem; 
+            margin-right: 10px;
         }
-        .code-wrapper {
-            margin: 10px 0;
+        .step-content { margin-left: 34px; }
+        .code-container {
+            background: #1e293b;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 10px;
         }
         .code-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #0f172a;
-            padding: 8px 12px;
-            border-radius: 6px 6px 0 0;
-            border: 1px solid #2d3748;
-            border-bottom: none;
+            padding: 8px 15px;
+            background: #334155;
         }
-        .code-language {
+        .language-tag {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
             font-size: 0.8rem;
-            color: #94a3b8;
-            text-transform: uppercase;
         }
         .copy-btn {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 4px;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-        }
-        .copy-btn:hover {
-            background: rgba(148, 163, 184, 0.1);
-            color: #f1f5f9;
-        }
-        .code-block {
-            background: #1a202c;
-            border: 1px solid #2d3748;
-            border-radius: 0 0 6px 6px;
-            padding: 15px;
-            overflow-x: auto;
-            margin: 0;
-        }
-        .step-image {
-            max-width: 100%;
-            height: auto;
-            border-radius: 6px;
-            border: 1px solid #334155;
-        }
-        .image-container {
-            text-align: center;
-        }
-        .image-caption {
-            font-size: 0.9rem;
-            color: #94a3b8;
-            margin-top: 8px;
-        }
-        .file-attachment {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: #1e293b;
-            border-radius: 6px;
-            border: 1px solid #334155;
+            gap: 6px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.2s;
         }
-        .file-icon {
-            font-size: 1.2rem;
-        }
-        .file-name {
-            font-weight: 500;
-            color: #f1f5f9;
-        }
-        .file-description {
-            color: #94a3b8;
+        .copy-btn:hover { background: #16a34a; }
+        pre { 
+            background: #1e293b; 
+            color: #e2e8f0; 
+            padding: 20px; 
             margin: 0;
+            overflow-x: auto; 
+            font-family: 'Fira Code', Consolas, monospace;
+            font-size: 0.9rem;
         }
-        .group-steps {
-            padding-left: 20px;
-            transition: max-height 0.3s ease;
-            overflow: hidden;
+        img { 
+            max-width: 100%; 
+            height: auto; 
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .group-steps.collapsed {
-            max-height: 0;
-            padding: 0 20px;
+        .step-text {
+            white-space: pre-wrap;
+            font-size: 1rem;
+            line-height: 1.7;
         }
-        
-        @media (max-width: 640px) {
-            body {
-                padding: 10px;
-            }
-            .title {
-                font-size: 2rem;
-            }
-            .step {
-                padding: 15px;
-            }
-            .group-steps {
-                padding-left: 10px;
-            }
+        .html-content {
+            border: 1px solid ${themeStyles.border};
+            border-radius: 6px;
+            padding: 15px;
+            background: ${themeStyles.cardBg};
         }
+        .file-content {
+            border: 1px solid ${themeStyles.border};
+            border-radius: 6px;
+            padding: 15px;
+            background: ${themeStyles.cardBg};
+        }
+        .file-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 12px;
+            border: 1px solid #3b82f6;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .file-link:hover {
+            background: #3b82f6;
+            color: white;
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #22c55e;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .toast.show { transform: translateX(0); }
     </style>
-    ${passwordScript}
 </head>
 <body>
-    <div class="header">
-        <h1 class="title">${title}</h1>
-        ${description ? `<p class="description">${description}</p>` : ''}
+    ${password ? `
+    <div id="password-modal" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    ">
+        <div style="
+            background: ${themeStyles.cardBg};
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        ">
+            <h2 style="color: ${themeStyles.text}; margin-bottom: 20px;">🔒 Защищённая инструкция</h2>
+            <p style="color: ${themeStyles.secondary}; margin-bottom: 20px;">Введите пароль для просмотра содержимого</p>
+            <input
+                type="password"
+                id="password-input"
+                placeholder="Пароль"
+                style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 2px solid ${themeStyles.border};
+                    border-radius: 6px;
+                    font-size: 16px;
+                    margin-bottom: 20px;
+                    background: ${themeStyles.bg};
+                    color: ${themeStyles.text};
+                "
+            />
+            <button
+                onclick="checkPassword()"
+                style="
+                    background: #3b82f6;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    width: 100%;
+                    transition: background-color 0.2s;
+                "
+                onmouseover="this.style.background='#2563eb'"
+                onmouseout="this.style.background='#3b82f6'"
+            >
+                Войти
+            </button>
+            <p id="password-error" style="color: #ef4444; margin-top: 10px; display: none;">Неверный пароль</p>
+        </div>
     </div>
-    
-    <div class="content">
-        ${groups ? groups.map(group => getGroupHTML(group)).join('') : ''}
-        ${ungroupedSteps.length > 0 ? ungroupedSteps.map(step => getStepHTML(step)).join('') : ''}
+    <div id="main-content" style="display: none;">
+        ${generateMainContent()}
     </div>
+    ` : generateMainContent()}
     
     <script>
-        function copyToClipboard(button) {
-            const code = button.getAttribute('data-code');
-            navigator.clipboard.writeText(code).then(() => {
-                const originalText = button.textContent;
-                button.textContent = '✅';
-                setTimeout(() => {
-                    button.textContent = originalText;
-                }, 2000);
-            }).catch(() => {
-                button.textContent = '❌';
-                setTimeout(() => {
-                    button.textContent = '📋';
-                }, 2000);
-            });
+        ${password ? `
+        function checkPassword() {
+            const input = document.getElementById('password-input');
+            const error = document.getElementById('password-error');
+            
+            if (input.value === '${password}') {
+                document.getElementById('password-modal').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            } else {
+                error.style.display = 'block';
+                input.value = '';
+                input.focus();
+            }
         }
         
+        document.getElementById('password-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+        
+        // Фокус на поле ввода при загрузке
+        document.getElementById('password-input').focus();
+        ` : ''}
+        
         function toggleGroup(groupId) {
+            const content = document.getElementById('content-' + groupId);
             const toggle = document.getElementById('toggle-' + groupId);
-            const steps = document.getElementById('steps-' + groupId);
             
-            if (steps.classList.contains('collapsed')) {
-                steps.classList.remove('collapsed');
-                toggle.classList.remove('collapsed');
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                content.classList.add('expanded');
                 toggle.textContent = '▼';
             } else {
-                steps.classList.add('collapsed');
-                toggle.classList.add('collapsed');
+                content.classList.remove('expanded');
+                content.classList.add('collapsed');
                 toggle.textContent = '▶';
             }
         }
+        
+        function copyCode(button) {
+            const codeBlock = button.closest('.code-container').querySelector('code');
+            const text = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Код скопирован в буфер обмена!');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Код скопирован в буфер обмена!');
+            });
+        }
+        
+        function showToast(message) {
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
     </script>
 </body>
-</html>
-  `;
+</html>`;
 
-  return html.trim();
+  return html;
 };
 
-export const exportToMarkdown = (title: string, description: string, steps: Step[]) => {
+export const exportToMarkdown = (title: string, description: string, steps: Step[]): string => {
   let markdown = `# ${title}\n\n`;
   
   if (description) {
     markdown += `${description}\n\n`;
   }
-
-  steps.forEach((step, index) => {
-    const getStepIcon = () => {
-      if (step.style?.icon) {
-        return step.style.icon;
+  
+  let stepNumber = 1;
+  
+  steps.forEach((step) => {
+    markdown += `## ${stepNumber}. ${step.title || 'Шаг'}\n\n`;
+    
+    if (step.type === 'code') {
+      const lang = step.language || '';
+      markdown += `\`\`\`${lang}\n${step.content}\n\`\`\`\n\n`;
+    } else if (step.type === 'image' && step.imageUrl) {
+      markdown += `![${step.title || 'Изображение'}](${step.imageUrl})\n\n`;
+      if (step.content) {
+        markdown += `${step.content}\n\n`;
       }
-      
-      switch (step.type) {
-        case 'text': return '📝';
-        case 'code': return '💻';
-        case 'image': return '🖼️';
-        case 'html': return '🌐';
-        case 'file': return '📎';
-        default: return '📄';
+    } else if (step.type === 'html') {
+      markdown += `\`\`\`html\n${step.content}\n\`\`\`\n\n`;
+    } else if (step.type === 'file' && step.fileName) {
+      markdown += `📎 [${step.fileName}](${step.fileData || '#'})\n\n`;
+      if (step.content) {
+        markdown += `${step.content}\n\n`;
       }
-    };
-
-    markdown += `## ${getStepIcon()} ${step.title || `Шаг ${index + 1}`}\n\n`;
-
-    switch (step.type) {
-      case 'text':
-        markdown += `${step.content || ''}\n\n`;
-        break;
-      case 'code':
-        markdown += `\`\`\`${step.language || 'javascript'}\n${step.content || ''}\n\`\`\`\n\n`;
-        break;
-      case 'html':
-        markdown += `\`\`\`html\n${step.content || ''}\n\`\`\`\n\n`;
-        break;
-      case 'image':
-        if (step.imageUrl) {
-          markdown += `![${step.title || 'Изображение'}](${step.imageUrl})\n\n`;
-        }
-        if (step.content) {
-          markdown += `${step.content}\n\n`;
-        }
-        break;
-      case 'file':
-        markdown += `📎 **Файл:** ${step.title || 'Прикрепленный файл'}\n\n`;
-        if (step.content) {
-          markdown += `${step.content}\n\n`;
-        }
-        break;
+    } else {
+      markdown += `${step.content}\n\n`;
     }
+    
+    stepNumber++;
   });
-
+  
   return markdown;
 };
 
-export const exportToJSON = (title: string, description: string, steps: Step[]) => {
-  return JSON.stringify({
+export const exportToJSON = (title: string, description: string, steps: Step[], groups: StepGroup[] = []): string => {
+  const data = {
     title,
     description,
     steps,
-    exportedAt: new Date().toISOString()
-  }, null, 2);
+    groups,
+    exportedAt: new Date().toISOString(),
+    version: '2.1.0'
+  };
+  
+  return JSON.stringify(data, null, 2);
 };
 
 export const downloadFile = (content: string, filename: string, mimeType: string) => {
