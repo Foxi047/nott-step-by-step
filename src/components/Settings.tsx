@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Palette, Info, HelpCircle } from 'lucide-react';
+import { X, Palette, Info, HelpCircle, Download, Smartphone } from 'lucide-react';
 import { useTheme, Theme } from '../hooks/useTheme';
+import { toast } from 'sonner';
 
 interface SettingsProps {
   onClose: () => void;
@@ -11,10 +12,40 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   const { theme, setTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'appearance' | 'help' | 'about'>('appearance');
+  const [activeTab, setActiveTab] = useState<'appearance' | 'pwa' | 'help' | 'about'>('appearance');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
+  };
+
+  const handleInstallPWA = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        toast.success('Приложение установлено!');
+        setIsInstallable(false);
+      }
+      setDeferredPrompt(null);
+    } else {
+      toast.info('Приложение уже установлено или недоступно для установки');
+    }
   };
 
   const renderAppearanceTab = () => (
@@ -36,6 +67,78 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
         <p className="text-xs text-slate-400 mt-2">
           Выберите тему для интерфейса приложения. Тема также применяется в предпросмотре и экспорте.
         </p>
+      </div>
+    </div>
+  );
+
+  const renderPWATab = () => (
+    <div className="space-y-4">
+      <h3 className="font-medium text-white mb-4">Progressive Web App (PWA)</h3>
+      
+      <div className="space-y-4">
+        <div className="p-4 bg-slate-700 rounded-lg">
+          <h4 className="font-medium text-white mb-2">Установка приложения</h4>
+          <p className="text-sm text-slate-300 mb-3">
+            Установите приложение на ваше устройство для оффлайн работы и быстрого доступа.
+          </p>
+          
+          {isInstallable ? (
+            <Button 
+              onClick={handleInstallPWA}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Установить приложение
+            </Button>
+          ) : (
+            <p className="text-sm text-slate-400">
+              Приложение уже установлено или недоступно для установки в этом браузере.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-3 text-sm text-slate-300">
+          <h4 className="font-medium text-white">Инструкция по установке:</h4>
+          
+          <div className="space-y-2">
+            <p><strong>На компьютере (Chrome/Edge):</strong></p>
+            <ul className="list-disc list-inside space-y-1 pl-4">
+              <li>Нажмите на иконку установки в адресной строке</li>
+              <li>Или используйте кнопку "Установить приложение" выше</li>
+              <li>Приложение появится в меню "Пуск" и на рабочем столе</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <p><strong>На Android:</strong></p>
+            <ul className="list-disc list-inside space-y-1 pl-4">
+              <li>Откройте меню браузера (три точки)</li>
+              <li>Выберите "Добавить на главный экран"</li>
+              <li>Или используйте кнопку "Установить приложение" выше</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <p><strong>На iPhone/iPad (Safari):</strong></p>
+            <ul className="list-disc list-inside space-y-1 pl-4">
+              <li>Нажмите кнопку "Поделиться" (квадрат со стрелкой)</li>
+              <li>Выберите "На экран «Домой»"</li>
+              <li>Нажмите "Добавить"</li>
+            </ul>
+          </div>
+
+          <div className="p-3 bg-blue-900/30 rounded-lg">
+            <p className="text-sm text-blue-200">
+              <strong>Преимущества установки:</strong>
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-4 text-xs text-blue-300 mt-2">
+              <li>Работа без интернета</li>
+              <li>Быстрый запуск с рабочего стола</li>
+              <li>Автосохранение проектов локально</li>
+              <li>Полноэкранный режим работы</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -84,11 +187,12 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           <p>• Markdown - для документации</p>
           <p>• JSON - для программного использования</p>
           <p>• QR-код - для быстрого доступа к инструкции</p>
+          <p>• Защита паролем для HTML файлов</p>
         </div>
         
         <div>
           <h4 className="font-medium text-white mb-1">Сохранение:</h4>
-          <p>• Автосохранение работает в фоновом режиме</p>
+          <p>• Автосохранение работает каждую секунду</p>
           <p>• Ручное сохранение через кнопку "Сохранить"</p>
           <p>• Сохранение с темой из предпросмотра</p>
           <p>• Импорт и экспорт проектов в JSON</p>
@@ -103,7 +207,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
       
       <div className="space-y-2">
         <p><span className="font-medium text-white">Название:</span> Nott Instructions</p>
-        <p><span className="font-medium text-white">Версия:</span> 2.0.0</p>
+        <p><span className="font-medium text-white">Версия:</span> 2.1.0</p>
         <p><span className="font-medium text-white">Разработчик:</span> Nott</p>
         <p><span className="font-medium text-white">Язык программирования:</span> TypeScript</p>
         <p><span className="font-medium text-white">Фреймворк:</span> React 18</p>
@@ -133,21 +237,22 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           <p>• Интерактивный предпросмотр с темами</p>
           <p>• Экспорт в HTML/Markdown/JSON</p>
           <p>• Локальное сохранение проектов</p>
-          <p>• Автосохранение работы</p>
+          <p>• Автосохранение работы (каждую секунду)</p>
           <p>• Генерация QR-кодов</p>
           <p>• Редактор изображений с аннотациями</p>
+          <p>• PWA поддержка для оффлайн работы</p>
         </div>
       </div>
       
       <div>
-        <p className="font-medium text-white mb-2">Новые возможности v2.0:</p>
+        <p className="font-medium text-white mb-2">Новые возможности v2.1:</p>
         <div className="pl-4 space-y-1">
-          <p>• Система групп с визуальными стилями</p>
-          <p>• Сворачиваемые группы в предпросмотре и экспорте</p>
-          <p>• Улучшенный HTML экспорт с интерактивностью</p>
-          <p>• Поддержка тем в экспортированных файлах</p>
-          <p>• Расширенные HTML шаблоны</p>
-          <p>• Улучшенный интерфейс и UX</p>
+          <p>• Диалог выбора параметров сохранения</p>
+          <p>• Защита HTML файлов паролем</p>
+          <p>• Выбор темы при экспорте</p>
+          <p>• PWA установщик и оффлайн работа</p>
+          <p>• Ускоренное автосохранение (1 секунда)</p>
+          <p>• Улучшенная боковая панель</p>
         </div>
       </div>
     </div>
@@ -180,6 +285,17 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
             Оформление
           </button>
           <button
+            onClick={() => setActiveTab('pwa')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'pwa'
+                ? 'border-blue-500 text-blue-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <Smartphone className="w-4 h-4 inline mr-2" />
+            PWA
+          </button>
+          <button
             onClick={() => setActiveTab('help')}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'help'
@@ -205,6 +321,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
 
         <div>
           {activeTab === 'appearance' && renderAppearanceTab()}
+          {activeTab === 'pwa' && renderPWATab()}
           {activeTab === 'help' && renderHelpTab()}
           {activeTab === 'about' && renderAboutTab()}
         </div>

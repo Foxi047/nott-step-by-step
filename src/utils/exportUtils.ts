@@ -1,7 +1,6 @@
-
 import { Step, StepGroup } from '../types/Step';
 
-export const exportToHTML = (title: string, description: string, steps: Step[], groups?: StepGroup[]) => {
+export const exportToHTML = (title: string, description: string, steps: Step[], groups?: StepGroup[], password?: string) => {
   const stepsByGroup = new Map<string, Step[]>();
   const ungroupedSteps: Step[] = [];
   
@@ -146,6 +145,19 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
       </div>
     `;
   };
+
+  const passwordScript = password ? `
+    <script>
+      (function() {
+        const correctPassword = '${password}';
+        const userPassword = prompt('Введите пароль для просмотра инструкции:');
+        if (userPassword !== correctPassword) {
+          document.body.innerHTML = '<div style="text-align: center; padding: 50px; color: #f1f5f9; background: #0f172a; min-height: 100vh;"><h1>Доступ запрещен</h1><p>Неверный пароль</p></div>';
+          return;
+        }
+      })();
+    </script>
+  ` : '';
 
   const html = `
 <!DOCTYPE html>
@@ -383,6 +395,7 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
             }
         }
     </style>
+    ${passwordScript}
 </head>
 <body>
     <div class="header">
@@ -392,12 +405,7 @@ export const exportToHTML = (title: string, description: string, steps: Step[], 
     
     <div class="content">
         ${groups ? groups.map(group => getGroupHTML(group)).join('') : ''}
-        ${ungroupedSteps.length > 0 ? `
-            <div class="ungrouped-steps">
-                <h3 style="color: #94a3b8; margin-bottom: 20px;">📋 Шаги без группы</h3>
-                ${ungroupedSteps.map(step => getStepHTML(step)).join('')}
-            </div>
-        ` : ''}
+        ${ungroupedSteps.length > 0 ? ungroupedSteps.map(step => getStepHTML(step)).join('') : ''}
     </div>
     
     <script>

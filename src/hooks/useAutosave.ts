@@ -1,8 +1,9 @@
+
 import { useEffect, useRef } from 'react';
 import { Step } from '../types/Step';
 
 const AUTOSAVE_KEY = 'nott-autosave';
-const AUTOSAVE_INTERVAL = 3000; // 3 секунды
+const AUTOSAVE_INTERVAL = 1000; // 1 секунда
 
 export const useAutosave = (
   title: string,

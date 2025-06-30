@@ -8,6 +8,7 @@ import ImageEditor from '../components/ImageEditor';
 import HtmlTemplateSelector from '../components/HtmlTemplateSelector';
 import QRCodeGenerator from '../components/QRCodeGenerator';
 import FileEditor from '../components/FileEditor';
+import SaveOptionsDialog from '../components/SaveOptionsDialog';
 import { Step } from '../types/Step';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
 import { useTheme, Theme } from '../hooks/useTheme';
@@ -26,6 +27,7 @@ const Index = () => {
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [showHtmlTemplateSelector, setShowHtmlTemplateSelector] = useState(false);
   const [showQRGenerator, setShowQRGenerator] = useState(false);
+  const [showSaveOptions, setShowSaveOptions] = useState(false);
   const [editingImageStepId, setEditingImageStepId] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{title: string, description: string, steps: Step[]} | null>(null);
   const [qrUrl, setQrUrl] = useState<string>('');
@@ -50,6 +52,21 @@ const Index = () => {
     getStepById
   } = useStepGroups();
   const { loadAutosave, clearAutosave } = useAutosave(instructionTitle, instructionDescription, getAllSteps());
+
+  // Регистрируем Service Worker для PWA
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+  }, []);
 
   // Загрузка автосохранения при запуске
   useEffect(() => {
@@ -320,7 +337,11 @@ const Index = () => {
     }
   };
 
-  const handleExport = (format: 'html' | 'markdown' | 'json') => {
+  const handleExportWithOptions = (options: {
+    format: 'html' | 'markdown' | 'json';
+    password?: string;
+    theme: 'light' | 'gray' | 'dark';
+  }) => {
     const allSteps = getAllSteps();
     if (allSteps.length === 0) {
       toast.error('Нет шагов для экспорта');
@@ -335,9 +356,9 @@ const Index = () => {
       let mimeType: string;
       let extension: string;
       
-      switch (format) {
+      switch (options.format) {
         case 'html':
-          content = exportToHTML(instructionTitle, instructionDescription, allSteps, groups);
+          content = exportToHTML(instructionTitle, instructionDescription, allSteps, groups, options.password);
           mimeType = 'text/html';
           extension = 'html';
           break;
@@ -367,12 +388,11 @@ const Index = () => {
       
       downloadFile(content, `${baseFilename}.${extension}`, mimeType);
       
-      // Create data URL for QR code
       const blob = new Blob([content], { type: mimeType });
       const dataUrl = URL.createObjectURL(blob);
       setQrUrl(dataUrl);
       
-      toast.success(`Экспорт в ${format.toUpperCase()} завершен`);
+      toast.success(`Экспорт в ${options.format.toUpperCase()} завершен${options.password ? ' с защитой паролем' : ''}`);
     } catch (error) {
       console.error('Ошибка экспорта:', error);
       toast.error('Ошибка при экспорте');
@@ -545,6 +565,14 @@ const Index = () => {
           defaultUrl={qrUrl}
         />
       )}
+
+      {showSaveOptions && (
+        <SaveOptionsDialog
+          isOpen={showSaveOptions}
+          onClose={() => setShowSaveOptions(false)}
+          onSave={handleExportWithOptions}
+        />
+      )}
       
       <Sidebar
         onAddStep={handleAddStep}
@@ -558,7 +586,7 @@ const Index = () => {
         }}
         onPasteImage={handlePasteImage}
         onSave={handleSave}
-        onExport={handleExport}
+        onExport={() => setShowSaveOptions(true)}
         onImportJSON={handleImportJSON}
         onGenerateQR={() => setShowQRGenerator(true)}
         onOpenSettings={() => setShowSettings(true)}

@@ -11,7 +11,7 @@ interface SidebarProps {
   onLoadImage: () => void;
   onPasteImage: () => void;
   onSave: () => void;
-  onExport: (format: 'html' | 'markdown' | 'json') => void;
+  onExport: () => void;
   onImportJSON: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onGenerateQR: () => void;
   onOpenSettings: () => void;
@@ -109,18 +109,18 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const SidebarContent = () => (
-    <div className="h-screen bg-slate-900 border-r border-slate-700 flex flex-col overflow-hidden">
-      <div className="p-4 sm:p-6 flex-shrink-0">
-        <h1 className="text-lg sm:text-xl font-bold text-white mb-2">Nott Instructions</h1>
+    <div className="h-screen bg-slate-900 border-r border-slate-700 flex flex-col fixed w-72">
+      <div className="p-4 flex-shrink-0">
+        <h1 className="text-lg font-bold text-white mb-2">Nott Instructions</h1>
       </div>
 
-      <div className="flex-1 px-4 sm:px-6 overflow-y-auto">
-        <div className="space-y-3 pb-6">
+      <div className="flex-1 px-4 overflow-y-auto">
+        <div className="space-y-2 pb-6">
           <h3 className="text-sm font-medium text-slate-300 mb-3">Добавить элемент</h3>
           
           <Button 
             onClick={() => onAddStep('text')} 
-            className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white min-h-[44px]"
+            className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white h-9 text-sm"
           >
             <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
             <span className="truncate">Добавить текст</span>
@@ -128,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <Button 
             onClick={() => onAddStep('code')} 
-            className="w-full justify-start bg-green-600 hover:bg-green-700 text-white min-h-[44px]"
+            className="w-full justify-start bg-green-600 hover:bg-green-700 text-white h-9 text-sm"
           >
             <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
             <span className="truncate">Добавить код</span>
@@ -136,17 +136,17 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <Button 
             onClick={onAddHtmlWithTemplate} 
-            className="w-full justify-start bg-orange-600 hover:bg-orange-700 text-white min-h-[44px]"
+            className="w-full justify-start bg-orange-600 hover:bg-orange-700 text-white h-9 text-sm"
           >
             <Code className="w-4 h-4 mr-2 flex-shrink-0" />
-            <span className="truncate">HTML-блок с шаблоном</span>
+            <span className="truncate">HTML-блок</span>
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white min-h-[44px]">
+              <Button className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white h-9 text-sm">
                 <Image className="w-4 h-4 mr-2 flex-shrink-0" />
-                <span className="truncate">Добавить изображение</span>
+                <span className="truncate">Изображение</span>
                 <ChevronDown className="w-4 h-4 ml-auto flex-shrink-0" />
               </Button>
             </DropdownMenuTrigger>
@@ -156,7 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 className="text-white hover:bg-slate-600 cursor-pointer"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                Загрузить с устройства
+                Загрузить файл
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={handlePasteImageClick}
@@ -186,7 +186,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             />
             <Button 
               onClick={() => fileInputRef.current?.click()}
-              className="w-full justify-start bg-yellow-600 hover:bg-yellow-700 text-white min-h-[44px]"
+              className="w-full justify-start bg-yellow-600 hover:bg-yellow-700 text-white h-9 text-sm"
             >
               <Paperclip className="w-4 h-4 mr-2 flex-shrink-0" />
               <span className="truncate">Прикрепить файл</span>
@@ -195,13 +195,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 border-t border-slate-700 flex-shrink-0">
-        <div className="space-y-3">
+      <div className="p-4 border-t border-slate-700 flex-shrink-0">
+        <div className="space-y-2">
           <h3 className="text-sm font-medium text-slate-300 mb-3">Действия</h3>
           
           <Button 
             onClick={onSave} 
-            className="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white min-h-[44px]"
+            className="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white h-9 text-sm"
           >
             <Save className="w-4 h-4 mr-2 flex-shrink-0" />
             <span className="truncate">Сохранить</span>
@@ -209,37 +209,19 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <Button 
             onClick={onOpenSavedProjects} 
-            className="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white min-h-[44px]"
+            className="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white h-9 text-sm"
           >
             <FolderOpen className="w-4 h-4 mr-2 flex-shrink-0" />
-            <span className="truncate">Сохранённые проекты</span>
+            <span className="truncate">Проекты</span>
           </Button>
 
-          <div className="space-y-2">
-            <Button 
-              onClick={() => onExport('html')} 
-              className="w-full justify-start bg-orange-600 hover:bg-orange-700 text-white min-h-[44px] text-xs"
-            >
-              <Download className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Экспорт в HTML</span>
-            </Button>
-            
-            <Button 
-              onClick={() => onExport('markdown')} 
-              className="w-full justify-start bg-yellow-600 hover:bg-yellow-700 text-white min-h-[44px] text-xs"
-            >
-              <Download className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Экспорт в Markdown</span>
-            </Button>
-            
-            <Button 
-              onClick={() => onExport('json')} 
-              className="w-full justify-start bg-cyan-600 hover:bg-cyan-700 text-white min-h-[44px] text-xs"
-            >
-              <Download className="w-4 h-4 mr-2 flex-shrink-0" />
-              <span className="truncate">Экспорт в JSON</span>
-            </Button>
-          </div>
+          <Button 
+            onClick={onExport} 
+            className="w-full justify-start bg-orange-600 hover:bg-orange-700 text-white h-9 text-sm"
+          >
+            <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span className="truncate">Экспорт</span>
+          </Button>
 
           <div>
             <input
@@ -251,7 +233,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             />
             <Button 
               onClick={() => importInputRef.current?.click()}
-              className="w-full justify-start bg-indigo-600 hover:bg-indigo-700 text-white min-h-[44px] text-xs"
+              className="w-full justify-start bg-indigo-600 hover:bg-indigo-700 text-white h-9 text-sm"
             >
               <FileUp className="w-4 h-4 mr-2 flex-shrink-0" />
               <span className="truncate">Импорт JSON</span>
@@ -260,15 +242,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <Button 
             onClick={onGenerateQR} 
-            className="w-full justify-start bg-pink-600 hover:bg-pink-700 text-white min-h-[44px] text-xs"
+            className="w-full justify-start bg-pink-600 hover:bg-pink-700 text-white h-9 text-sm"
           >
             <QrCode className="w-4 h-4 mr-2 flex-shrink-0" />
-            <span className="truncate">Генерировать QR</span>
+            <span className="truncate">QR-код</span>
           </Button>
 
           <Button 
             onClick={onOpenSettings} 
-            className="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white min-h-[44px]"
+            className="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white h-9 text-sm"
           >
             <Settings className="w-4 h-4 mr-2 flex-shrink-0" />
             <span className="truncate">Настройки</span>
