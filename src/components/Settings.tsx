@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Palette, Info, HelpCircle, Download, Smartphone, Install } from 'lucide-react';
+import { X, Palette, Info, HelpCircle, Download, Smartphone, Plus } from 'lucide-react';
 import { useTheme, Theme } from '../hooks/useTheme';
 import { toast } from 'sonner';
 
@@ -141,7 +141,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
               className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
               size="lg"
             >
-              <Install className="w-5 h-5 mr-2" />
+              <Plus className="w-5 h-5 mr-2" />
               Установить приложение
             </Button>
           )}
