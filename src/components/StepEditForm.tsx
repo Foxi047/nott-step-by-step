@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Check, X } from 'lucide-react';
 import { Step } from '../types/Step';
 import StepStyleSelector from './StepStyleSelector';
+import TextFormattingToolbar from './TextFormattingToolbar';
 
 interface StepEditFormProps {
   step: Step;
@@ -36,6 +37,39 @@ const StepEditForm: React.FC<StepEditFormProps> = ({
   onCancel,
   onStyleChange
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleInsertFormat = (format: string) => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = editContent.substring(start, end);
+      
+      let newContent = '';
+      if (selectedText) {
+        // Replace selected text with formatted version
+        if (format.includes('текст')) {
+          newContent = editContent.substring(0, start) + format.replace('текст', selectedText) + editContent.substring(end);
+        } else {
+          newContent = editContent.substring(0, start) + format + editContent.substring(end);
+        }
+      } else {
+        // Insert at cursor position
+        newContent = editContent.substring(0, start) + format + editContent.substring(end);
+      }
+      
+      onContentChange(newContent);
+      
+      // Set focus back to textarea
+      setTimeout(() => {
+        textarea.focus();
+        const newPos = start + format.length;
+        textarea.setSelectionRange(newPos, newPos);
+      }, 0);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <Input
@@ -80,7 +114,12 @@ const StepEditForm: React.FC<StepEditFormProps> = ({
         </div>
       )}
       
+      {step.type === 'text' && (
+        <TextFormattingToolbar onInsertFormat={handleInsertFormat} />
+      )}
+      
       <Textarea
+        ref={textareaRef}
         placeholder={
           step.type === 'code' ? 'Код' : 
           step.type === 'html' ? 'HTML код' : 

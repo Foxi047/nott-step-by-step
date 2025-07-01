@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Copy, Palette, Download, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Copy, Palette, ChevronDown, ChevronRight } from 'lucide-react';
 import { Step, StepGroup } from '../types/Step';
 import { toast } from 'sonner';
 import { useTheme, Theme } from '../hooks/useTheme';
+import ExportDialog from './ExportDialog';
 
 interface PreviewModeProps {
   title: string;
@@ -43,16 +44,6 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
   const handleThemeChange = (newTheme: Theme) => {
     setPreviewTheme(newTheme);
     setTheme(newTheme);
-  };
-
-  const handleExportClick = () => {
-    if (onExport) {
-      // Передаем именно выбранную тему предпросмотра
-      onExport({
-        format: 'html',
-        theme: previewTheme
-      });
-    }
   };
 
   const toggleGroupCollapse = (groupId: string) => {
@@ -118,13 +109,9 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
             </Select>
           </div>
           
-          <Button
-            onClick={handleExportClick}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Экспорт
-          </Button>
+          {onExport && (
+            <ExportDialog onExport={onExport} />
+          )}
           
           <Button
             variant="ghost"

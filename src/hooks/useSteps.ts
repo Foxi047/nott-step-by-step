@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Step } from '../types/Step';
 import { toast } from 'sonner';
@@ -48,11 +47,7 @@ export const useSteps = () => {
       newStep = {
         id: Date.now().toString(),
         type: 'text',
-        content: `• Элемент списка 1
-• Элемент списка 2
-• Элемент списка 3
-
-Или обычный текст для описания шага...`,
+        content: '',
         title: ''
       };
     }

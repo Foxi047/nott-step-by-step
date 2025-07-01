@@ -31,6 +31,7 @@ interface MainAreaProps {
   onAddHtmlWithTemplate?: (groupId?: string) => void;
   onLoadImage?: (groupId?: string) => void;
   onAddFileToGroup?: (groupId: string) => void;
+  onReorderGroups?: (newGroups: StepGroup[]) => void;
 }
 
 const MainArea: React.FC<MainAreaProps> = ({
@@ -53,7 +54,8 @@ const MainArea: React.FC<MainAreaProps> = ({
   onAddStepToGroup,
   onAddHtmlWithTemplate,
   onLoadImage,
-  onAddFileToGroup
+  onAddFileToGroup,
+  onReorderGroups
 }) => {
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -62,7 +64,15 @@ const MainArea: React.FC<MainAreaProps> = ({
     
     // Handle group reordering
     if (result.type === 'group') {
-      return; // Group reordering will be handled separately
+      const newGroups = Array.from(groups);
+      const [reorderedGroup] = newGroups.splice(source.index, 1);
+      newGroups.splice(destination.index, 0, reorderedGroup);
+      
+      if (onReorderGroups) {
+        onReorderGroups(newGroups);
+      }
+      toast.success('Порядок групп изменен');
+      return;
     }
     
     // Handle step reordering within same droppable
