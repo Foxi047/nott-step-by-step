@@ -27,14 +27,14 @@ export const useSteps = () => {
         id: Date.now().toString(),
         type: 'html',
         content: '<p>Введите HTML код здесь</p>',
-        title: 'HTML блок'
+        title: ''
       };
     } else if (type === 'code') {
       newStep = {
         id: Date.now().toString(),
         type: 'code',
         content: '// Введите ваш код здесь',
-        title: 'Код',
+        title: '',
         language: 'javascript'
       };
     } else if (type === 'image') {
@@ -42,14 +42,18 @@ export const useSteps = () => {
         id: Date.now().toString(),
         type: 'image',
         content: '',
-        title: 'Новое изображение'
+        title: ''
       };
     } else {
       newStep = {
         id: Date.now().toString(),
         type: 'text',
-        content: 'Новый шаг',
-        title: 'Текст'
+        content: `• Элемент списка 1
+• Элемент списка 2
+• Элемент списка 3
+
+Или обычный текст для описания шага...`,
+        title: ''
       };
     }
     

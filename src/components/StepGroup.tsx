@@ -140,51 +140,6 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
           </div>
 
           <div className="flex gap-1">
-            {onAddStepToGroup && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Добавить шаг
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-slate-700 border-slate-600 z-50">
-                  <DropdownMenuItem 
-                    onClick={() => handleAddStep('text')}
-                    className="text-white hover:bg-slate-600 cursor-pointer"
-                  >
-                    📝 Текст
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleAddStep('code')}
-                    className="text-white hover:bg-slate-600 cursor-pointer"
-                  >
-                    💻 Код
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleAddStep('html')}
-                    className="text-white hover:bg-slate-600 cursor-pointer"
-                  >
-                    🌐 HTML-блок с шаблоном
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleAddStep('image')}
-                    className="text-white hover:bg-slate-600 cursor-pointer"
-                  >
-                    🖼️ Добавить изображение
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleAddStep('file')}
-                    className="text-white hover:bg-slate-600 cursor-pointer"
-                  >
-                    📎 Прикрепить файл
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
             <Button
               size="sm"
               variant="ghost"
@@ -259,6 +214,55 @@ const StepGroupComponent: React.FC<StepGroupProps> = ({
                   <div className="text-center py-8 text-slate-400 border-2 border-dashed border-slate-600 rounded-lg">
                     <div className="text-2xl mb-2">📋</div>
                     <p>Перетащите шаги сюда или используйте кнопку "Добавить шаг"</p>
+                  </div>
+                )}
+                
+                {/* Кнопка добавления шага в конце группы */}
+                {onAddStepToGroup && (
+                  <div className="pt-4 border-t border-purple-700/30">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white w-full"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Добавить шаг
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56 bg-slate-700 border-slate-600 z-50">
+                        <DropdownMenuItem 
+                          onClick={() => handleAddStep('text')}
+                          className="text-white hover:bg-slate-600 cursor-pointer"
+                        >
+                          📝 Текст
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleAddStep('code')}
+                          className="text-white hover:bg-slate-600 cursor-pointer"
+                        >
+                          💻 Код
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleAddStep('html')}
+                          className="text-white hover:bg-slate-600 cursor-pointer"
+                        >
+                          🌐 HTML-блок с шаблоном
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleAddStep('image')}
+                          className="text-white hover:bg-slate-600 cursor-pointer"
+                        >
+                          🖼️ Добавить изображение
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleAddStep('file')}
+                          className="text-white hover:bg-slate-600 cursor-pointer"
+                        >
+                          📎 Прикрепить файл
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 )}
               </div>

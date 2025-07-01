@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -48,8 +47,7 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
 
   const handleExportClick = () => {
     if (onExport) {
-      // Вызываем функцию экспорта с текущей темой предпросмотра
-      // Диалог выбора параметров откроется в родительском компоненте
+      // Передаем именно выбранную тему предпросмотра
       onExport({
         format: 'html',
         theme: previewTheme

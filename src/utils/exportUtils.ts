@@ -1,4 +1,3 @@
-
 import { Step, StepGroup } from '../types/Step';
 
 export const exportToHTML = (
@@ -193,10 +192,16 @@ export const exportToHTML = (
         .group-content { 
             background: ${themeStyles.cardBg}; 
             transition: max-height 0.3s ease-out;
+            overflow: visible;
+        }
+        .group-content.collapsed { 
+            max-height: 0; 
             overflow: hidden;
         }
-        .group-content.collapsed { max-height: 0; }
-        .group-content.expanded { max-height: 1000px; }
+        .group-content.expanded { 
+            max-height: none;
+            overflow: visible;
+        }
         
         .step { 
             margin: 20px; 
