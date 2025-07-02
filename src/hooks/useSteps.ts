@@ -32,7 +32,7 @@ export const useSteps = () => {
       newStep = {
         id: Date.now().toString(),
         type: 'code',
-        content: '// Введите ваш код здесь',
+        content: '',
         title: '',
         language: 'javascript'
       };

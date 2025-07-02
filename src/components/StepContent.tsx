@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Step } from '../types/Step';
 import ImageStepEditor from './ImageStepEditor';
 import FileStepEditor from './FileStepEditor';
 import CodeStepEditor from './CodeStepEditor';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface StepContentProps {
   step: Step;
@@ -23,6 +24,58 @@ const StepContent: React.FC<StepContentProps> = ({
   onEditFile,
   onEditHtml
 }) => {
+  const [selectedParagraphs, setSelectedParagraphs] = useState<Set<number>>(new Set());
+
+  const handleCopyToClipboard = async (text: string, paragraphIndex: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Текст скопирован в буфер обмена');
+      
+      // Toggle selection state
+      setSelectedParagraphs(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(paragraphIndex)) {
+          newSet.delete(paragraphIndex);
+        } else {
+          newSet.add(paragraphIndex);
+        }
+        return newSet;
+      });
+    } catch (error) {
+      toast.error('Ошибка копирования текста');
+    }
+  };
+
+  const renderTextWithCopyButtons = (content: string) => {
+    const paragraphs = content.split(/\n\s*\n/);
+    
+    return paragraphs.map((paragraph, index) => {
+      if (!paragraph.trim()) return null;
+      
+      const isSelected = selectedParagraphs.has(index);
+      
+      return (
+        <div key={index} className="relative group mb-4 last:mb-0">
+          <div className={`${isSelected ? 'bg-blue-900/20 border border-blue-700 rounded p-2' : ''} relative`}>
+            <div className="text-slate-200 whitespace-pre-wrap break-words text-sm sm:text-base">
+              {isSelected && <span className="text-blue-400 mr-2">⧉</span>}
+              {paragraph}
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleCopyToClipboard(paragraph, index)}
+              className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-white p-1 h-6 w-6 text-xs"
+              title="Копировать абзац"
+            >
+              ⧉
+            </Button>
+          </div>
+        </div>
+      );
+    }).filter(Boolean);
+  };
+
   const renderStepContent = () => {
     if (step.type === 'image' && step.imageUrl) {
       return <ImageStepEditor step={step} onEditImage={onEditImage} />;
@@ -78,6 +131,15 @@ const StepContent: React.FC<StepContentProps> = ({
               </pre>
             </div>
           )}
+        </div>
+      );
+    }
+    
+    // For text steps, render with copy buttons
+    if (step.type === 'text') {
+      return (
+        <div className="space-y-2">
+          {renderTextWithCopyButtons(step.content)}
         </div>
       );
     }
