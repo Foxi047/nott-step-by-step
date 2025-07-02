@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, Underline, List, ListOrdered } from 'lucide-react';
+import { Bold, Italic, Underline, List, ListOrdered, Copy } from 'lucide-react';
 
 interface TextFormattingToolbarProps {
   onInsertFormat: (format: string) => void;
@@ -62,6 +62,18 @@ const TextFormattingToolbar: React.FC<TextFormattingToolbarProps> = ({ onInsertF
         title="Нумерованный список"
       >
         <ListOrdered className="w-4 h-4" />
+      </Button>
+      
+      <div className="w-px bg-slate-500 mx-1" />
+      
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => handleFormatClick('[COPY]')}
+        className="text-white hover:bg-slate-500 px-2"
+        title="Сделать абзац копируемым"
+      >
+        ⧉
       </Button>
     </div>
   );

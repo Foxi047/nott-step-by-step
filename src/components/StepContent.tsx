@@ -24,52 +24,44 @@ const StepContent: React.FC<StepContentProps> = ({
   onEditFile,
   onEditHtml
 }) => {
-  const [selectedParagraphs, setSelectedParagraphs] = useState<Set<number>>(new Set());
-
-  const handleCopyToClipboard = async (text: string, paragraphIndex: number) => {
+  const handleCopyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
       toast.success('Текст скопирован в буфер обмена');
-      
-      // Toggle selection state
-      setSelectedParagraphs(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(paragraphIndex)) {
-          newSet.delete(paragraphIndex);
-        } else {
-          newSet.add(paragraphIndex);
-        }
-        return newSet;
-      });
     } catch (error) {
       toast.error('Ошибка копирования текста');
     }
   };
 
   const renderTextWithCopyButtons = (content: string) => {
+    // Разделяем текст на абзацы
     const paragraphs = content.split(/\n\s*\n/);
     
     return paragraphs.map((paragraph, index) => {
       if (!paragraph.trim()) return null;
       
-      const isSelected = selectedParagraphs.has(index);
+      // Проверяем, начинается ли абзац с маркера [COPY]
+      const isCopyable = paragraph.startsWith('[COPY]');
+      const displayText = isCopyable ? paragraph.substring(6) : paragraph; // Убираем маркер [COPY]
       
       return (
         <div key={index} className="relative group mb-4 last:mb-0">
-          <div className={`${isSelected ? 'bg-blue-900/20 border border-blue-700 rounded p-2' : ''} relative`}>
+          <div className={`${isCopyable ? 'bg-blue-900/20 border border-blue-700 rounded p-3' : ''} relative`}>
             <div className="text-slate-200 whitespace-pre-wrap break-words text-sm sm:text-base">
-              {isSelected && <span className="text-blue-400 mr-2">⧉</span>}
-              {paragraph}
+              {isCopyable && <span className="text-blue-400 mr-2">⧉</span>}
+              {displayText}
             </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => handleCopyToClipboard(paragraph, index)}
-              className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-white p-1 h-6 w-6 text-xs"
-              title="Копировать абзац"
-            >
-              ⧉
-            </Button>
+            {isCopyable && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleCopyToClipboard(displayText)}
+                className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-white p-1 h-6 w-6 text-xs"
+                title="Копировать абзац"
+              >
+                ⧉
+              </Button>
+            )}
           </div>
         </div>
       );

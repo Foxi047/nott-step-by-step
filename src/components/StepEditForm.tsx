@@ -47,26 +47,50 @@ const StepEditForm: React.FC<StepEditFormProps> = ({
       const selectedText = editContent.substring(start, end);
       
       let newContent = '';
-      if (selectedText) {
+      
+      if (format === '[COPY]') {
+        // Найти начало текущей строки
+        const beforeCursor = editContent.substring(0, start);
+        const lineStart = beforeCursor.lastIndexOf('\n') + 1;
+        const lineEnd = editContent.indexOf('\n', start);
+        const actualLineEnd = lineEnd === -1 ? editContent.length : lineEnd;
+        
+        // Вставить маркер в начало строки
+        newContent = editContent.substring(0, lineStart) + '[COPY]' + editContent.substring(lineStart);
+        
+        // Установить курсор после маркера
+        setTimeout(() => {
+          textarea.focus();
+          const newPos = lineStart + 6; // длина '[COPY]'
+          textarea.setSelectionRange(newPos, newPos);
+        }, 0);
+      } else if (selectedText) {
         // Replace selected text with formatted version
         if (format.includes('текст')) {
           newContent = editContent.substring(0, start) + format.replace('текст', selectedText) + editContent.substring(end);
         } else {
           newContent = editContent.substring(0, start) + format + editContent.substring(end);
         }
+        
+        // Set focus back to textarea
+        setTimeout(() => {
+          textarea.focus();
+          const newPos = start + format.length;
+          textarea.setSelectionRange(newPos, newPos);
+        }, 0);
       } else {
         // Insert at cursor position
         newContent = editContent.substring(0, start) + format + editContent.substring(end);
+        
+        // Set focus back to textarea
+        setTimeout(() => {
+          textarea.focus();
+          const newPos = start + format.length;
+          textarea.setSelectionRange(newPos, newPos);
+        }, 0);
       }
       
       onContentChange(newContent);
-      
-      // Set focus back to textarea
-      setTimeout(() => {
-        textarea.focus();
-        const newPos = start + format.length;
-        textarea.setSelectionRange(newPos, newPos);
-      }, 0);
     }
   };
 
