@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Palette, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Palette, ChevronDown, ChevronRight, Copy } from 'lucide-react';
 import { Step, StepGroup } from '../types/Step';
 import { toast } from 'sonner';
 import { useTheme, Theme } from '../hooks/useTheme';
