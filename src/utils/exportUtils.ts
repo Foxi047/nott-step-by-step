@@ -39,6 +39,33 @@ export const exportToHTML = (
 
   const themeStyles = getThemeStyles(selectedTheme);
 
+  const renderTextWithCopyButtons = (content: string) => {
+    const paragraphs = content.split(/\n\s*\n/);
+    
+    return paragraphs.map((paragraph, index) => {
+      if (!paragraph.trim()) return '';
+      
+      const isCopyable = paragraph.startsWith('[COPY]');
+      const displayText = isCopyable ? paragraph.substring(6) : paragraph;
+      
+      if (isCopyable) {
+        return `
+          <div class="copyable-paragraph" data-index="${index}">
+            <div class="copyable-content">
+              <span class="copy-icon">⧉</span>
+              <span class="copyable-text">${displayText}</span>
+            </div>
+            <button onclick="copyParagraph(this)" class="copy-paragraph-btn" title="Копировать абзац">
+              ⧉
+            </button>
+          </div>
+        `;
+      } else {
+        return `<div class="text-paragraph">${displayText}</div>`;
+      }
+    }).join('');
+  };
+
   const generateMainContent = () => `
     <div class="container">
       <h1>${title}</h1>
@@ -75,6 +102,8 @@ export const exportToHTML = (
                   ` : step.type === 'image' && step.imageUrl ? `
                     <img src="${step.imageUrl}" alt="${step.title || ''}" />
                     ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
+                  ` : step.type === 'text' ? `
+                    <div class="text-content">${renderTextWithCopyButtons(step.content)}</div>
                   ` : step.type === 'html' ? `
                     <div class="html-content">${step.content}</div>
                   ` : step.type === 'file' && step.fileData ? `
@@ -118,6 +147,8 @@ export const exportToHTML = (
             ` : step.type === 'image' && step.imageUrl ? `
               <img src="${step.imageUrl}" alt="${step.title || ''}" />
               ${step.content ? `<div class="step-text">${step.content}</div>` : ''}
+            ` : step.type === 'text' ? `
+              <div class="text-content">${renderTextWithCopyButtons(step.content)}</div>
             ` : step.type === 'html' ? `
               <div class="html-content">${step.content}</div>
             ` : step.type === 'file' && step.fileData ? `
@@ -284,6 +315,61 @@ export const exportToHTML = (
             white-space: pre-wrap;
             font-size: 1rem;
             line-height: 1.7;
+        }
+        .text-content {
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+        .text-paragraph {
+            margin-bottom: 16px;
+            white-space: pre-wrap;
+        }
+        .copyable-paragraph {
+            position: relative;
+            margin-bottom: 16px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            transition: all 0.2s;
+        }
+        .copyable-paragraph:hover {
+            background: rgba(59, 130, 246, 0.15);
+        }
+        .copyable-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .copy-icon {
+            color: #3b82f6;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .copyable-text {
+            white-space: pre-wrap;
+            flex: 1;
+            word-break: break-word;
+        }
+        .copy-paragraph-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .copyable-paragraph:hover .copy-paragraph-btn {
+            opacity: 1;
+        }
+        .copy-paragraph-btn:hover {
+            background: #16a34a;
         }
         .html-content {
             border: 1px solid ${themeStyles.border};
@@ -452,6 +538,23 @@ export const exportToHTML = (
             });
         }
         
+        function copyParagraph(button) {
+            const paragraph = button.closest('.copyable-paragraph');
+            const text = paragraph.querySelector('.copyable-text').textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Текст скопирован в буфер обмена!');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Текст скопирован в буфер обмена!');
+            });
+        }
+        
         function showToast(message) {
             const existingToast = document.querySelector('.toast');
             if (existingToast) existingToast.remove();
@@ -534,4 +637,25 @@ export const downloadFile = (content: string, filename: string, mimeType: string
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+};
+
+export const generateFileName = (
+  title: string,
+  theme: 'light' | 'gray' | 'dark',
+  totalSteps: number,
+  format: 'html' | 'markdown' | 'json' = 'html'
+): string => {
+  const themeCode = theme === 'light' ? 'L' : theme === 'gray' ? 'G' : 'B';
+  const currentDate = new Date();
+  const day = currentDate.getDate().toString().padStart(2, '0');
+  const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');  
+  const year = currentDate.getFullYear();
+  const dateString = `${day}/${month}.${year}`;
+  
+  const extension = format === 'html' ? 'html' : format === 'markdown' ? 'md' : 'json';
+  
+  // Очищаем название от недопустимых символов для имени файла
+  const cleanTitle = title.replace(/[<>:"/\\|?*]/g, '_').trim() || 'Инструкция';
+  
+  return `${cleanTitle}_${themeCode}_${totalSteps}_${dateString}.${extension}`;
 };

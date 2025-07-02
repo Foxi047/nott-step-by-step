@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Copy, Palette, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Palette, ChevronDown, ChevronRight } from 'lucide-react';
 import { Step, StepGroup } from '../types/Step';
 import { toast } from 'sonner';
 import { useTheme, Theme } from '../hooks/useTheme';
-import ExportDialog from './ExportDialog';
 
 interface PreviewModeProps {
   title: string;
@@ -150,10 +149,6 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
               </SelectContent>
             </Select>
           </div>
-          
-          {onExport && (
-            <ExportDialog onExport={onExport} />
-          )}
           
           <Button
             variant="ghost"
