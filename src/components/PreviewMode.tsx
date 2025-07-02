@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,6 +39,15 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
       toast.success('Код скопирован в буфер обмена');
     } catch (error) {
       toast.error('Ошибка копирования кода');
+    }
+  };
+
+  const handleCopyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Текст скопирован в буфер обмена');
+    } catch (error) {
+      toast.error('Ошибка копирования текста');
     }
   };
 
@@ -85,6 +95,39 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
           border: '#334155'
         };
     }
+  };
+
+  const renderTextWithCopyButtons = (content: string, textColor: string) => {
+    const paragraphs = content.split(/\n\s*\n/);
+    
+    return paragraphs.map((paragraph, index) => {
+      if (!paragraph.trim()) return null;
+      
+      const isCopyable = paragraph.startsWith('[COPY]');
+      const displayText = isCopyable ? paragraph.substring(6) : paragraph;
+      
+      return (
+        <div key={index} className="relative group mb-4 last:mb-0">
+          <div className={`${isCopyable ? 'bg-blue-900/20 border border-blue-700 rounded p-3' : ''} relative`}>
+            <div className="whitespace-pre-wrap break-words" style={{ color: textColor }}>
+              {isCopyable && <span className="text-blue-400 mr-2">⧉</span>}
+              {displayText}
+            </div>
+            {isCopyable && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleCopyToClipboard(displayText)}
+                className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-white p-1 h-6 w-6 text-xs"
+                title="Копировать абзац"
+              >
+                ⧉
+              </Button>
+            )}
+          </div>
+        </div>
+      );
+    }).filter(Boolean);
   };
 
   const themeStyles = getThemeStyles(previewTheme);
@@ -194,9 +237,13 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
                             className="max-w-full h-auto rounded shadow-lg mb-4"
                           />
                           {step.content && (
-                            <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                            step.type === 'text' ? 
+                              renderTextWithCopyButtons(step.content, themeStyles.text) :
+                              <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
                           )}
                         </div>
+                      ) : step.type === 'text' ? (
+                        renderTextWithCopyButtons(step.content, themeStyles.text)
                       ) : (
                         <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
                       )}
@@ -255,9 +302,13 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
                       className="max-w-full h-auto rounded shadow-lg mb-4"
                     />
                     {step.content && (
-                      <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                      step.type === 'text' ? 
+                        renderTextWithCopyButtons(step.content, themeStyles.text) :
+                        <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
                     )}
                   </div>
+                ) : step.type === 'text' ? (
+                  renderTextWithCopyButtons(step.content, themeStyles.text)
                 ) : (
                   <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
                 )}
