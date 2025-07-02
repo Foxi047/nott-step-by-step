@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -237,9 +236,7 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
                             className="max-w-full h-auto rounded shadow-lg mb-4"
                           />
                           {step.content && (
-                            step.type === 'text' ? 
-                              renderTextWithCopyButtons(step.content, themeStyles.text) :
-                              <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                            <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
                           )}
                         </div>
                       ) : step.type === 'text' ? (
@@ -302,9 +299,7 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
                       className="max-w-full h-auto rounded shadow-lg mb-4"
                     />
                     {step.content && (
-                      step.type === 'text' ? 
-                        renderTextWithCopyButtons(step.content, themeStyles.text) :
-                        <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                      <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
                     )}
                   </div>
                 ) : step.type === 'text' ? (
