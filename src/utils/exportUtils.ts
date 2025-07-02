@@ -1,3 +1,4 @@
+
 import { Step, StepGroup } from '../types/Step';
 
 export const exportToHTML = (
@@ -645,17 +646,17 @@ export const generateFileName = (
   totalSteps: number,
   format: 'html' | 'markdown' | 'json' = 'html'
 ): string => {
-  const themeCode = theme === 'light' ? 'L' : theme === 'gray' ? 'G' : 'B';
+  const themeCode = theme === 'light' ? 'L' : theme === 'gray' ? 'G' : 'D';
   const currentDate = new Date();
   const day = currentDate.getDate().toString().padStart(2, '0');
   const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');  
   const year = currentDate.getFullYear();
-  const dateString = `${day}/${month}.${year}`;
+  const dateString = `${day}.${month}.${year}`;
   
   const extension = format === 'html' ? 'html' : format === 'markdown' ? 'md' : 'json';
   
   // Очищаем название от недопустимых символов для имени файла
-  const cleanTitle = title.replace(/[<>:"/\\|?*]/g, '_').trim() || 'Инструкция';
+  const cleanTitle = title.replace(/[<>:"/\\|?*]/g, '_').trim() || 'Новая инструкция';
   
   return `${cleanTitle}_${themeCode}_${totalSteps}_${dateString}.${extension}`;
 };
