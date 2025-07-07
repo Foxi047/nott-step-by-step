@@ -7,7 +7,7 @@ interface ProjectManagerProps {
   onSave: () => void;
   onExport: (format: 'html' | 'markdown' | 'json') => void;
   onImportJSON: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onGenerateQR: () => void;
+  
   onOpenSettings: () => void;
   onOpenSavedProjects: () => void;
   onSaveWithTheme: (theme: Theme) => void;
@@ -17,7 +17,7 @@ const ProjectManager: React.FC<ProjectManagerProps> = ({
   onSave,
   onExport,
   onImportJSON,
-  onGenerateQR,
+  
   onOpenSettings,
   onOpenSavedProjects,
   onSaveWithTheme

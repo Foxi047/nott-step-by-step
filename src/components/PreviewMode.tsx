@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -133,7 +132,13 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
   const ungroupedSteps = steps.filter(step => !step.groupId);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-auto" style={{ background: themeStyles.bg }}>
+    <div className="fixed inset-0 z-50 overflow-auto" style={{ 
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      lineHeight: '1.6',
+      background: themeStyles.bg,
+      color: themeStyles.text
+    }}>
+      {/* Контрольная панель */}
       <div className="bg-slate-800 p-4 flex justify-between items-center sticky top-0 z-10">
         <h2 className="text-xl font-bold text-white">Предпросмотр: {title}</h2>
         <div className="flex gap-2 items-center">
@@ -161,21 +166,57 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-8 min-h-screen" style={{ background: themeStyles.bg }}>
-        <h1 className="text-3xl font-bold mb-4" style={{ color: themeStyles.text }}>{title}</h1>
+      {/* Контент в стиле экспортируемого HTML */}
+      <div 
+        style={{
+          maxWidth: '800px',
+          margin: '0 auto',
+          padding: '40px',
+          background: themeStyles.cardBg,
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          marginTop: '40px',
+          marginBottom: '40px'
+        }}
+      >
+        <h1 style={{ 
+          color: themeStyles.text, 
+          marginBottom: '10px', 
+          fontSize: '2rem',
+          fontWeight: 'bold'
+        }}>
+          {title}
+        </h1>
+        
         {description && (
-          <p className="text-lg mb-8" style={{ color: themeStyles.secondary }}>{description}</p>
+          <div style={{ 
+            color: themeStyles.secondary, 
+            marginBottom: '30px', 
+            fontSize: '1.1rem' 
+          }}>
+            {description}
+          </div>
         )}
         
         {/* Группированные шаги */}
         {groups.map((group) => (
-          <div key={group.id} className="mb-8 border-2 rounded-lg overflow-hidden" style={{ 
-            borderColor: themeStyles.border,
-            background: themeStyles.cardBg 
+          <div key={group.id} style={{
+            margin: '30px 0',
+            border: `2px solid ${themeStyles.border}`,
+            borderRadius: '12px',
+            overflow: 'hidden'
           }}>
             <div 
-              className="p-4 cursor-pointer flex items-center font-semibold hover:opacity-80"
-              style={{ background: themeStyles.border, color: themeStyles.text }}
+              style={{
+                background: themeStyles.border,
+                padding: '15px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                userSelect: 'none',
+                fontWeight: '600',
+                color: themeStyles.text
+              }}
               onClick={() => toggleGroupCollapse(group.id)}
             >
               {collapsedGroups.has(group.id) ? (
@@ -187,40 +228,90 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
             </div>
             
             {!collapsedGroups.has(group.id) && (
-              <div className="p-4" style={{ background: themeStyles.cardBg }}>
+              <div style={{ background: themeStyles.cardBg }}>
                 {group.steps.map((step, stepIndex) => (
-                  <div key={step.id} className="mb-6 p-6 border rounded-lg" style={{ 
-                    borderColor: themeStyles.border, 
-                    background: themeStyles.bg 
+                  <div key={step.id} style={{
+                    margin: '20px',
+                    padding: '20px',
+                    border: `1px solid ${themeStyles.border}`,
+                    borderRadius: '8px',
+                    background: themeStyles.bg
                   }}>
-                    <div className="flex items-center mb-4">
-                      <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-3">
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginBottom: '15px',
+                      fontWeight: '600',
+                      color: themeStyles.text,
+                      fontSize: '1.1rem'
+                    }}>
+                      <div style={{
+                        background: '#3b82f6',
+                        color: 'white',
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.9rem',
+                        marginRight: '10px'
+                      }}>
                         {stepIndex + 1}
                       </div>
-                      <h3 className="text-xl font-semibold" style={{ color: themeStyles.text }}>
-                        {step.title || 'Шаг'}
-                      </h3>
+                      {step.title || 'Шаг'}
                     </div>
                     
-                    <div className="ml-11">
+                    <div style={{ marginLeft: '34px' }}>
                       {step.type === 'code' ? (
                         <div>
-                          <div className="flex justify-between items-center mb-2">
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '8px 15px',
+                            background: '#334155'
+                          }}>
                             {step.language && (
-                              <div className="bg-blue-600 text-white px-3 py-1 rounded text-sm inline-block">
+                              <div style={{
+                                background: '#3b82f6',
+                                color: 'white',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '0.8rem'
+                              }}>
                                 {step.language}
                               </div>
                             )}
                             <Button 
                               size="sm"
                               onClick={() => handleCopyCode(step.content)}
-                              className="bg-green-600 hover:bg-green-700 text-white"
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                background: '#22c55e',
+                                color: 'white',
+                                border: 'none',
+                                padding: '6px 12px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '12px'
+                              }}
                             >
-                              <Copy className="w-3 h-3 mr-1" />
+                              <Copy className="w-3 h-3" />
                               Копировать код
                             </Button>
                           </div>
-                          <pre className="bg-gray-900 text-green-400 p-4 rounded overflow-x-auto relative">
+                          <pre style={{
+                            background: '#1e293b',
+                            color: '#e2e8f0',
+                            padding: '20px',
+                            margin: '0',
+                            overflowX: 'auto',
+                            fontFamily: '"Fira Code", Consolas, monospace',
+                            fontSize: '0.9rem'
+                          }}>
                             <code>{step.content}</code>
                           </pre>
                         </div>
@@ -229,16 +320,84 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
                           <img 
                             src={step.imageUrl} 
                             alt={step.title || 'Изображение'} 
-                            className="max-w-full h-auto rounded shadow-lg mb-4"
+                            style={{
+                              maxWidth: '100%',
+                              height: 'auto',
+                              borderRadius: '6px',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                            }}
                           />
                           {step.content && (
-                            <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                            <div style={{
+                              whiteSpace: 'pre-wrap',
+                              fontSize: '1rem',
+                              lineHeight: '1.7',
+                              color: themeStyles.text,
+                              marginTop: '10px'
+                            }}>
+                              {step.content}
+                            </div>
                           )}
                         </div>
                       ) : step.type === 'text' ? (
-                        renderTextWithCopyButtons(step.content, themeStyles.text)
+                        <div style={{ fontSize: '1rem', lineHeight: '1.7' }}>
+                          {renderTextWithCopyButtons(step.content, themeStyles.text)}
+                        </div>
+                      ) : step.type === 'html' ? (
+                        <div 
+                          style={{
+                            border: `1px solid ${themeStyles.border}`,
+                            borderRadius: '6px',
+                            padding: '15px',
+                            background: themeStyles.cardBg
+                          }}
+                          dangerouslySetInnerHTML={{ __html: step.content }}
+                        />
+                      ) : step.type === 'file' && step.fileData ? (
+                        <div style={{
+                          border: `1px solid ${themeStyles.border}`,
+                          borderRadius: '6px',
+                          padding: '15px',
+                          background: themeStyles.cardBg
+                        }}>
+                          <a 
+                            href={step.fileData} 
+                            download={step.fileName || 'file'}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              color: '#3b82f6',
+                              textDecoration: 'none',
+                              fontWeight: '500',
+                              padding: '8px 12px',
+                              border: '1px solid #3b82f6',
+                              borderRadius: '6px'
+                            }}
+                          >
+                            📎 {step.fileName || 'Скачать файл'}
+                          </a>
+                          {step.content && (
+                            <div style={{
+                              whiteSpace: 'pre-wrap',
+                              fontSize: '1rem',
+                              lineHeight: '1.7',
+                              color: themeStyles.text,
+                              marginTop: '10px'
+                            }}>
+                              {step.content}
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                        <div style={{
+                          whiteSpace: 'pre-wrap',
+                          fontSize: '1rem',
+                          lineHeight: '1.7',
+                          color: themeStyles.text
+                        }}>
+                          {step.content}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -252,38 +411,88 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
         {ungroupedSteps.map((step, index) => {
           const stepNumber = groups.reduce((acc, group) => acc + group.steps.length, 0) + index + 1;
           return (
-            <div key={step.id} className="mb-8 p-6 border rounded-lg" style={{ 
-              borderColor: themeStyles.border, 
-              background: themeStyles.cardBg 
+            <div key={step.id} style={{
+              marginBottom: '32px',
+              padding: '20px',
+              border: `1px solid ${themeStyles.border}`,
+              borderRadius: '8px',
+              background: themeStyles.cardBg
             }}>
-              <div className="flex items-center mb-4">
-                <div className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-3">
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: '15px',
+                fontWeight: '600',
+                color: themeStyles.text,
+                fontSize: '1.1rem'
+              }}>
+                <div style={{
+                  background: '#3b82f6',
+                  color: 'white',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.9rem',
+                  marginRight: '10px'
+                }}>
                   {stepNumber}
                 </div>
-                <h3 className="text-xl font-semibold" style={{ color: themeStyles.text }}>
-                  {step.title || 'Шаг'}
-                </h3>
+                {step.title || 'Шаг'}
               </div>
               
-              <div className="ml-11">
+              <div style={{ marginLeft: '34px' }}>
                 {step.type === 'code' ? (
                   <div>
-                    <div className="flex justify-between items-center mb-2">
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 15px',
+                      background: '#334155'
+                    }}>
                       {step.language && (
-                        <div className="bg-blue-600 text-white px-3 py-1 rounded text-sm inline-block">
+                        <div style={{
+                          background: '#3b82f6',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.8rem'
+                        }}>
                           {step.language}
                         </div>
                       )}
                       <Button 
                         size="sm"
                         onClick={() => handleCopyCode(step.content)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: '#22c55e',
+                          color: 'white',
+                          border: 'none',
+                          padding: '6px 12px',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
                       >
-                        <Copy className="w-3 h-3 mr-1" />
+                        <Copy className="w-3 h-3" />
                         Копировать код
                       </Button>
                     </div>
-                    <pre className="bg-gray-900 text-green-400 p-4 rounded overflow-x-auto relative">
+                    <pre style={{
+                      background: '#1e293b',
+                      color: '#e2e8f0',
+                      padding: '20px',
+                      margin: '0',
+                      overflowX: 'auto',
+                      fontFamily: '"Fira Code", Consolas, monospace',
+                      fontSize: '0.9rem'
+                    }}>
                       <code>{step.content}</code>
                     </pre>
                   </div>
@@ -292,16 +501,84 @@ const PreviewMode: React.FC<PreviewModeProps> = ({
                     <img 
                       src={step.imageUrl} 
                       alt={step.title || 'Изображение'} 
-                      className="max-w-full h-auto rounded shadow-lg mb-4"
+                      style={{
+                        maxWidth: '100%',
+                        height: 'auto',
+                        borderRadius: '6px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
                     />
                     {step.content && (
-                      <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                      <div style={{
+                        whiteSpace: 'pre-wrap',
+                        fontSize: '1rem',
+                        lineHeight: '1.7',
+                        color: themeStyles.text,
+                        marginTop: '10px'
+                      }}>
+                        {step.content}
+                      </div>
                     )}
                   </div>
                 ) : step.type === 'text' ? (
-                  renderTextWithCopyButtons(step.content, themeStyles.text)
+                  <div style={{ fontSize: '1rem', lineHeight: '1.7' }}>
+                    {renderTextWithCopyButtons(step.content, themeStyles.text)}
+                  </div>
+                ) : step.type === 'html' ? (
+                  <div 
+                    style={{
+                      border: `1px solid ${themeStyles.border}`,
+                      borderRadius: '6px',
+                      padding: '15px',
+                      background: themeStyles.cardBg
+                    }}
+                    dangerouslySetInnerHTML={{ __html: step.content }}
+                  />
+                ) : step.type === 'file' && step.fileData ? (
+                  <div style={{
+                    border: `1px solid ${themeStyles.border}`,
+                    borderRadius: '6px',
+                    padding: '15px',
+                    background: themeStyles.cardBg
+                  }}>
+                    <a 
+                      href={step.fileData} 
+                      download={step.fileName || 'file'}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        color: '#3b82f6',
+                        textDecoration: 'none',
+                        fontWeight: '500',
+                        padding: '8px 12px',
+                        border: '1px solid #3b82f6',
+                        borderRadius: '6px'
+                      }}
+                    >
+                      📎 {step.fileName || 'Скачать файл'}
+                    </a>
+                    {step.content && (
+                      <div style={{
+                        whiteSpace: 'pre-wrap',
+                        fontSize: '1rem',
+                        lineHeight: '1.7',
+                        color: themeStyles.text,
+                        marginTop: '10px'
+                      }}>
+                        {step.content}
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <p className="whitespace-pre-wrap" style={{ color: themeStyles.text }}>{step.content}</p>
+                  <div style={{
+                    whiteSpace: 'pre-wrap',
+                    fontSize: '1rem',
+                    lineHeight: '1.7',
+                    color: themeStyles.text
+                  }}>
+                    {step.content}
+                  </div>
                 )}
               </div>
             </div>

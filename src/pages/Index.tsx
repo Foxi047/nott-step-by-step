@@ -6,7 +6,7 @@ import SavedProjects from '../components/SavedProjects';
 import PreviewMode from '../components/PreviewMode';
 import ImageEditor from '../components/ImageEditor';
 import HtmlTemplateSelector from '../components/HtmlTemplateSelector';
-import QRCodeGenerator from '../components/QRCodeGenerator';
+
 import FileEditor from '../components/FileEditor';
 import SaveOptionsDialog from '../components/SaveOptionsDialog';
 import { Step } from '../types/Step';
@@ -15,7 +15,7 @@ import { useTheme, Theme } from '../hooks/useTheme';
 import { useSteps } from '../hooks/useSteps';
 import { useStepGroups } from '../hooks/useStepGroups';
 import { useAutosave } from '../hooks/useAutosave';
-import { exportToHTML, exportToMarkdown, exportToJSON, downloadFile } from '../utils/exportUtils';
+import { exportToHTML, exportToMarkdown, exportToJSON, downloadFile, generateFileName } from '../utils/exportUtils';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -26,11 +26,9 @@ const Index = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [showHtmlTemplateSelector, setShowHtmlTemplateSelector] = useState(false);
-  const [showQRGenerator, setShowQRGenerator] = useState(false);
   const [showSaveOptions, setShowSaveOptions] = useState(false);
   const [editingImageStepId, setEditingImageStepId] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<{title: string, description: string, steps: Step[]} | null>(null);
-  const [qrUrl, setQrUrl] = useState<string>('');
   const [selectedGroupForTemplate, setSelectedGroupForTemplate] = useState<string | null>(null);
   const [selectedGroupForImage, setSelectedGroupForImage] = useState<string | null>(null);
   const [selectedGroupForFile, setSelectedGroupForFile] = useState<string | null>(null);
@@ -333,49 +331,36 @@ const Index = () => {
       return;
     }
 
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const baseFilename = `${instructionTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${timestamp}`;
     
     try {
       let content: string;
       let mimeType: string;
-      let extension: string;
+      let filename: string;
       
       switch (options.format) {
         case 'html':
           content = exportToHTML(instructionTitle, instructionDescription, allSteps, groups, options.password, options.theme);
           mimeType = 'text/html';
-          extension = 'html';
+          filename = generateFileName(instructionTitle, options.theme, allSteps.length, 'html');
           break;
         
         case 'markdown':
           content = exportToMarkdown(instructionTitle, instructionDescription, allSteps);
           mimeType = 'text/markdown';
-          extension = 'md';
+          filename = generateFileName(instructionTitle, options.theme, allSteps.length, 'markdown');
           break;
         
         case 'json':
-          const jsonData = {
-            title: instructionTitle,
-            description: instructionDescription,
-            steps: allSteps,
-            groups: groups,
-            exportedAt: new Date().toISOString()
-          };
-          content = JSON.stringify(jsonData, null, 2);
+          content = exportToJSON(instructionTitle, instructionDescription, allSteps, groups);
           mimeType = 'application/json';
-          extension = 'json';
+          filename = generateFileName(instructionTitle, options.theme, allSteps.length, 'json');
           break;
           
         default:
           throw new Error('Неподдерживаемый формат');
       }
       
-      downloadFile(content, `${baseFilename}.${extension}`, mimeType);
-      
-      const blob = new Blob([content], { type: mimeType });
-      const dataUrl = URL.createObjectURL(blob);
-      setQrUrl(dataUrl);
+      downloadFile(content, filename, mimeType);
       
       toast.success(`Экспорт в ${options.format.toUpperCase()} завершен${options.password ? ' с защитой паролем' : ''}`);
     } catch (error) {
@@ -555,12 +540,6 @@ const Index = () => {
         />
       )}
 
-      {showQRGenerator && (
-        <QRCodeGenerator
-          onClose={() => setShowQRGenerator(false)}
-          defaultUrl={qrUrl}
-        />
-      )}
 
       {showSaveOptions && (
         <SaveOptionsDialog
@@ -591,7 +570,7 @@ const Index = () => {
         onSave={handleSave}
         onExport={() => setShowSaveOptions(true)}
         onImportJSON={handleImportJSON}
-        onGenerateQR={() => setShowQRGenerator(true)}
+        
         onOpenSettings={() => setShowSettings(true)}
         onOpenSavedProjects={() => setShowSavedProjects(true)}
       />

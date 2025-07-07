@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Plus, Upload, Save, Download, FileText, Settings, FolderOpen, Clipboard, Code, Paperclip, Menu, X, QrCode, FileUp, ChevronDown, Image } from 'lucide-react';
+import { Plus, Upload, Save, Download, FileText, Settings, FolderOpen, Clipboard, Code, Paperclip, Menu, X, FileUp, ChevronDown, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
@@ -13,7 +13,7 @@ interface SidebarProps {
   onSave: () => void;
   onExport: () => void;
   onImportJSON: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onGenerateQR: () => void;
+  
   onOpenSettings: () => void;
   onOpenSavedProjects: () => void;
 }
@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSave,
   onExport,
   onImportJSON,
-  onGenerateQR,
+  
   onOpenSettings,
   onOpenSavedProjects
 }) => {
@@ -240,13 +240,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             </Button>
           </div>
 
-          <Button 
-            onClick={onGenerateQR} 
-            className="w-full justify-start bg-pink-600 hover:bg-pink-700 text-white h-9 text-sm"
-          >
-            <QrCode className="w-4 h-4 mr-2 flex-shrink-0" />
-            <span className="truncate">QR-код</span>
-          </Button>
 
           <Button 
             onClick={onOpenSettings} 

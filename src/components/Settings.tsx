@@ -270,7 +270,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           <p>• HTML - для веб-страниц с интерактивными функциями</p>
           <p>• Markdown - для документации</p>
           <p>• JSON - для программного использования</p>
-          <p>• QR-код - для быстрого доступа к инструкции</p>
+          
           <p>• Защита паролем для HTML файлов</p>
         </div>
         
@@ -307,7 +307,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           <p>• React Beautiful DnD</p>
           <p>• Vite</p>
           <p>• Konva (для редактирования изображений)</p>
-          <p>• QRCode (для генерации QR-кодов)</p>
+          
         </div>
       </div>
       
@@ -322,7 +322,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           <p>• Экспорт в HTML/Markdown/JSON</p>
           <p>• Локальное сохранение проектов</p>
           <p>• Автосохранение работы (каждую секунду)</p>
-          <p>• Генерация QR-кодов</p>
+          
           <p>• Редактор изображений с аннотациями</p>
           <p>• PWA поддержка для оффлайн работы</p>
         </div>
