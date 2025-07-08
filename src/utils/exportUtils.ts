@@ -235,7 +235,7 @@ export const exportToHTML = (
             overflow: visible;
         }
         
-        .step { 
+         .step { 
             margin: 20px; 
             padding: 20px; 
             border: 1px solid ${themeStyles.border};
@@ -316,14 +316,17 @@ export const exportToHTML = (
             white-space: pre-wrap;
             font-size: 1rem;
             line-height: 1.7;
+            color: ${themeStyles.text};
         }
         .text-content {
             font-size: 1rem;
             line-height: 1.7;
+            color: ${themeStyles.text};
         }
         .text-paragraph {
             margin-bottom: 16px;
             white-space: pre-wrap;
+            color: ${themeStyles.text};
         }
         .copyable-paragraph {
             position: relative;
@@ -351,6 +354,7 @@ export const exportToHTML = (
             white-space: pre-wrap;
             flex: 1;
             word-break: break-word;
+            color: ${themeStyles.text};
         }
         .copy-paragraph-btn {
             position: absolute;
