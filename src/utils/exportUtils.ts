@@ -1,4 +1,3 @@
-
 import { Step, StepGroup } from '../types/Step';
 
 export const exportToHTML = (
@@ -17,7 +16,10 @@ export const exportToHTML = (
           text: '#1e293b',
           secondary: '#64748b',
           cardBg: '#f8fafc',
-          border: '#e2e8f0'
+          border: '#e2e8f0',
+          codeBg: '#f1f5f9',
+          codeHeaderBg: '#e2e8f0',
+          codeText: '#1e293b'
         };
       case 'gray':
         return {
@@ -25,7 +27,10 @@ export const exportToHTML = (
           text: '#f1f5f9',
           secondary: '#cbd5e1',
           cardBg: '#475569',
-          border: '#334155'
+          border: '#334155',
+          codeBg: '#334155',
+          codeHeaderBg: '#1e293b',
+          codeText: '#f1f5f9'
         };
       case 'dark':
         return {
@@ -33,7 +38,10 @@ export const exportToHTML = (
           text: '#f1f5f9',
           secondary: '#94a3b8',
           cardBg: '#1e293b',
-          border: '#334155'
+          border: '#334155',
+          codeBg: '#1e293b',
+          codeHeaderBg: '#334155',
+          codeText: '#e2e8f0'
         };
     }
   };
@@ -218,7 +226,9 @@ export const exportToHTML = (
             font-weight: 600;
             color: ${themeStyles.text};
         }
-        .group-header:hover { background: ${themeStyles.secondary}; }
+        .group-header:hover { 
+            background: ${selectedTheme === 'light' ? '#cbd5e1' : selectedTheme === 'gray' ? '#64748b' : '#475569'}; 
+        }
         .group-toggle { margin-right: 10px; transition: transform 0.2s; }
         .group-toggle.collapsed { transform: rotate(-90deg); }
         .group-content { 
@@ -264,7 +274,7 @@ export const exportToHTML = (
         }
         .step-content { margin-left: 34px; }
         .code-container {
-            background: #1e293b;
+            background: ${themeStyles.codeBg};
             border-radius: 6px;
             overflow: hidden;
             margin-top: 10px;
@@ -274,7 +284,7 @@ export const exportToHTML = (
             justify-content: space-between;
             align-items: center;
             padding: 8px 15px;
-            background: #334155;
+            background: ${themeStyles.codeHeaderBg};
         }
         .language-tag {
             background: #3b82f6;
@@ -298,8 +308,8 @@ export const exportToHTML = (
         }
         .copy-btn:hover { background: #16a34a; }
         pre { 
-            background: #1e293b; 
-            color: #e2e8f0; 
+            background: ${themeStyles.codeBg}; 
+            color: ${themeStyles.codeText}; 
             padding: 20px; 
             margin: 0;
             overflow-x: auto; 
@@ -331,14 +341,14 @@ export const exportToHTML = (
         .copyable-paragraph {
             position: relative;
             margin-bottom: 16px;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: ${selectedTheme === 'light' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.1)'};
+            border: 1px solid ${selectedTheme === 'light' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.3)'};
             border-radius: 6px;
             padding: 12px;
             transition: all 0.2s;
         }
         .copyable-paragraph:hover {
-            background: rgba(59, 130, 246, 0.15);
+            background: ${selectedTheme === 'light' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.15)'};
         }
         .copyable-content {
             display: flex;
