@@ -19,8 +19,8 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Возвращаем кешированную версию или загружаем из сети
-        return response || fetch(event.request);
+        // Всегда возвращаем только кешированную версию, без обращения к сети
+        return response || new Response('', { status: 404 });
       }
     )
   );

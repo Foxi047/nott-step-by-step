@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Palette, Info, HelpCircle, Download, Smartphone, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { X, Palette, Info, HelpCircle, Download, Smartphone, Plus, RefreshCw } from 'lucide-react';
 import { useTheme, Theme } from '../hooks/useTheme';
 import { toast } from 'sonner';
 
@@ -15,6 +16,8 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [updateCode, setUpdateCode] = useState('');
+  const [showUpdateInput, setShowUpdateInput] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -67,6 +70,27 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
     } catch (error) {
       toast.error('Ошибка при установке приложения');
     }
+  };
+
+  const handleUpdateApp = () => {
+    if (updateCode === 'Nott_013') {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(registration => {
+            registration.unregister();
+          });
+          window.location.reload();
+          toast.success('Приложение обновлено!');
+        });
+      } else {
+        window.location.reload();
+        toast.success('Приложение обновлено!');
+      }
+    } else {
+      toast.error('Неверный код');
+    }
+    setUpdateCode('');
+    setShowUpdateInput(false);
   };
 
   const getInstallStatus = () => {
@@ -147,9 +171,63 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
           )}
           
           {isInstalled && (
-            <div className="p-4 bg-green-900/30 rounded-lg text-green-200">
-              <p className="font-medium">Приложение уже установлено!</p>
-              <p className="text-sm mt-1">Вы можете запускать его прямо с рабочего стола</p>
+            <div className="space-y-4">
+              <div className="p-4 bg-green-900/30 rounded-lg text-green-200">
+                <p className="font-medium">Приложение уже установлено!</p>
+                <p className="text-sm mt-1">Вы можете запускать его прямо с рабочего стола</p>
+              </div>
+              
+              <div className="p-4 bg-slate-700 rounded-lg">
+                <h4 className="font-medium text-white mb-3">Обновление приложения</h4>
+                <p className="text-sm text-slate-300 mb-3">
+                  Для обновления приложения через интернет требуется код доступа.
+                </p>
+                
+                {!showUpdateInput ? (
+                  <Button
+                    onClick={() => setShowUpdateInput(true)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Обновить приложение
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <Input
+                      type="password"
+                      placeholder="Введите код доступа"
+                      value={updateCode}
+                      onChange={(e) => setUpdateCode(e.target.value)}
+                      className="bg-slate-600 border-slate-500"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleUpdateApp();
+                        }
+                      }}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleUpdateApp}
+                        className="flex-1"
+                        disabled={!updateCode}
+                      >
+                        Обновить
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowUpdateInput(false);
+                          setUpdateCode('');
+                        }}
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        Отмена
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
           
