@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -7,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { FileText, Download, Lock } from 'lucide-react';
+import { Theme } from '../hooks/useTheme';
 
 interface SaveOptionsDialogProps {
   isOpen: boolean;
@@ -16,13 +16,18 @@ interface SaveOptionsDialogProps {
     password?: string;
     theme: 'light' | 'gray' | 'dark';
   }) => void;
+  currentTheme: Theme;
 }
 
-const SaveOptionsDialog: React.FC<SaveOptionsDialogProps> = ({ isOpen, onClose, onSave }) => {
+const SaveOptionsDialog: React.FC<SaveOptionsDialogProps> = ({ isOpen, onClose, onSave, currentTheme }) => {
   const [format, setFormat] = useState<'html' | 'markdown' | 'json'>('html');
   const [usePassword, setUsePassword] = useState(false);
   const [password, setPassword] = useState('');
-  const [theme, setTheme] = useState<'light' | 'gray' | 'dark'>('dark');
+  const [theme, setTheme] = useState<'light' | 'gray' | 'dark'>(currentTheme);
+
+  useEffect(() => {
+    setTheme(currentTheme);
+  }, [currentTheme]);
 
   const handleSave = () => {
     onSave({
@@ -31,11 +36,10 @@ const SaveOptionsDialog: React.FC<SaveOptionsDialogProps> = ({ isOpen, onClose, 
       theme
     });
     onClose();
-    // Сбрасываем состояние
     setFormat('html');
     setUsePassword(false);
     setPassword('');
-    setTheme('dark');
+    setTheme(currentTheme);
   };
 
   const formatNames = {
@@ -134,6 +138,9 @@ const SaveOptionsDialog: React.FC<SaveOptionsDialogProps> = ({ isOpen, onClose, 
                     <SelectItem value="dark">Тёмная</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-slate-400">
+                  По умолчанию: {currentTheme === 'light' ? 'Светлая' : currentTheme === 'gray' ? 'Серая' : 'Тёмная'} (текущая тема приложения)
+                </p>
               </div>
             </>
           )}
@@ -152,7 +159,7 @@ const SaveOptionsDialog: React.FC<SaveOptionsDialogProps> = ({ isOpen, onClose, 
             disabled={usePassword && !password.trim()}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            Сохранить {formatNames[format]}
+            Сохранить {format === 'html' ? 'HTML' : format === 'markdown' ? 'Markdown' : 'JSON'}
           </Button>
         </DialogFooter>
       </DialogContent>

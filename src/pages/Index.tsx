@@ -546,13 +546,14 @@ const Index = () => {
           isOpen={showSaveOptions}
           onClose={() => setShowSaveOptions(false)}
           onSave={(options) => {
-            // Применяем выбранную тему, если она была изменена в предпросмотре
+            // Используем текущую тему приложения как значение по умолчанию
             const finalOptions = {
               ...options,
-              theme: previewTheme || options.theme
+              theme: options.theme || theme // Используем тему из настроек приложения
             };
             handleExportWithOptions(finalOptions);
           }}
+          currentTheme={theme} // Передаем текущую тему
         />
       )}
       
