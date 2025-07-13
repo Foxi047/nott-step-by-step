@@ -49,7 +49,8 @@ const Index = () => {
     getAllSteps,
     setUngroupedSteps,
     getStepById,
-    setGroups
+    setGroups,
+    reorderGroups
   } = useStepGroups();
   const { loadAutosave, clearAutosave } = useAutosave(instructionTitle, instructionDescription, getAllSteps());
 
@@ -633,6 +634,7 @@ const Index = () => {
           setSelectedGroupForFile(groupId);
           setShowFileEditor(true);
         }}
+        onReorderGroups={reorderGroups}
       />
     </div>
   );

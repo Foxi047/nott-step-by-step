@@ -128,6 +128,10 @@ export const useStepGroups = () => {
     return null;
   }, [groups, ungroupedSteps]);
 
+  const reorderGroups = (newGroups: StepGroup[]) => {
+    setGroups(newGroups);
+  };
+
   return {
     groups,
     ungroupedSteps,
@@ -141,6 +145,7 @@ export const useStepGroups = () => {
     updateStepInGroup,
     removeStepFromEverywhere,
     getAllSteps,
-    getStepById
+    getStepById,
+    reorderGroups
   };
 };
