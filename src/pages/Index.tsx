@@ -48,7 +48,8 @@ const Index = () => {
     updateStepInGroup,
     getAllSteps,
     setUngroupedSteps,
-    getStepById
+    getStepById,
+    setGroups
   } = useStepGroups();
   const { loadAutosave, clearAutosave } = useAutosave(instructionTitle, instructionDescription, getAllSteps());
 
@@ -311,13 +312,32 @@ const Index = () => {
       return;
     }
     
-    const success = saveInstruction(instructionTitle, instructionDescription, allSteps);
+    const success = saveInstruction(instructionTitle, instructionDescription, allSteps, groups);
     if (success) {
       clearAutosave();
       toast.success('Инструкция сохранена');
     } else {
       toast.error('Ошибка сохранения');
     }
+  };
+
+  const handleNewProject = () => {
+    // Сначала сохраняем текущий проект если есть изменения
+    const allSteps = getAllSteps();
+    if (allSteps.length > 0) {
+      saveInstruction(instructionTitle, instructionDescription, allSteps, groups);
+      toast.success('Текущий проект сохранён');
+    }
+    
+    // Очищаем все данные для нового проекта
+    setInstructionTitle('Новая инструкция');
+    setInstructionDescription('');
+    setSteps([]);
+    setGroups([]);
+    setUngroupedSteps([]);
+    clearAutosave();
+    
+    toast.success('Создан новый проект');
   };
 
   const handleExportWithOptions = (options: {
@@ -399,10 +419,11 @@ const Index = () => {
     reader.readAsText(file);
   };
 
-  const handleLoadProject = (title: string, description: string, projectSteps: Step[]) => {
+  const handleLoadProject = (title: string, description: string, projectSteps: Step[], projectGroups: StepGroup[] = []) => {
     setInstructionTitle(title);
     setInstructionDescription(description);
     setSteps(projectSteps);
+    setGroups(projectGroups);
     // Разделяем шаги на группированные и неформированные
     const unGroupedSteps = projectSteps.filter(step => !step.groupId);
     setUngroupedSteps(unGroupedSteps);
@@ -410,7 +431,7 @@ const Index = () => {
     toast.success('Проект загружен');
   };
 
-  const handlePreviewProject = (title: string, description: string, projectSteps: Step[]) => {
+  const handlePreviewProject = (title: string, description: string, projectSteps: Step[], projectGroups: StepGroup[] = []) => {
     setPreviewData({ title, description, steps: projectSteps });
     setShowPreview(true);
     setShowSavedProjects(false);
@@ -464,6 +485,8 @@ const Index = () => {
     setShowSaveOptions(true);
     setShowPreview(false);
   };
+
+  const hasUnsavedChanges = getAllSteps().length > 0 || instructionTitle !== 'Новая инструкция' || instructionDescription !== '';
 
   return (
     <div className={`min-h-screen flex ${theme}`} style={{
@@ -571,9 +594,10 @@ const Index = () => {
         onSave={handleSave}
         onExport={() => setShowSaveOptions(true)}
         onImportJSON={handleImportJSON}
-        
         onOpenSettings={() => setShowSettings(true)}
         onOpenSavedProjects={() => setShowSavedProjects(true)}
+        onNewProject={handleNewProject}
+        hasUnsavedChanges={hasUnsavedChanges}
       />
       
       <MainArea

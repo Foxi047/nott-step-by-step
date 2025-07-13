@@ -1,11 +1,13 @@
+
 import { useState, useEffect } from 'react';
-import { Step } from '../types/Step';
+import { Step, StepGroup } from '../types/Step';
 
 interface Instruction {
   id: string;
   title: string;
   description: string;
   steps: Step[];
+  groups: StepGroup[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,7 +25,8 @@ export const useInstructionStorage = () => {
         setInstructions(parsed.map((inst: any) => ({
           ...inst,
           createdAt: new Date(inst.createdAt),
-          updatedAt: new Date(inst.updatedAt)
+          updatedAt: new Date(inst.updatedAt),
+          groups: inst.groups || []
         })));
       } catch (error) {
         console.error('Ошибка загрузки инструкций:', error);
@@ -36,7 +39,7 @@ export const useInstructionStorage = () => {
     localStorage.setItem('nott-instructions', JSON.stringify(instructions));
   }, [instructions]);
 
-  const saveInstruction = (title: string, description: string, steps: Step[]) => {
+  const saveInstruction = (title: string, description: string, steps: Step[], groups: StepGroup[] = []) => {
     const now = new Date();
     
     if (currentInstruction) {
@@ -46,6 +49,7 @@ export const useInstructionStorage = () => {
         title,
         description,
         steps,
+        groups,
         updatedAt: now
       };
       
@@ -60,6 +64,7 @@ export const useInstructionStorage = () => {
         title,
         description,
         steps,
+        groups,
         createdAt: now,
         updatedAt: now
       };

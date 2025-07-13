@@ -3,13 +3,13 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Edit, Trash2, FileText, Eye } from 'lucide-react';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
-import { Step } from '../types/Step';
+import { Step, StepGroup } from '../types/Step';
 import { toast } from 'sonner';
 
 interface SavedProjectsProps {
   onClose: () => void;
-  onLoadProject: (title: string, description: string, steps: Step[]) => void;
-  onPreviewProject: (title: string, description: string, steps: Step[]) => void;
+  onLoadProject: (title: string, description: string, steps: Step[], groups: StepGroup[]) => void;
+  onPreviewProject: (title: string, description: string, steps: Step[], groups: StepGroup[]) => void;
 }
 
 const SavedProjects: React.FC<SavedProjectsProps> = ({ 
@@ -18,11 +18,24 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({
   onPreviewProject 
 }) => {
   const { instructions, deleteInstruction } = useInstructionStorage();
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
 
   const handleEdit = (instruction: any) => {
-    onLoadProject(instruction.title, instruction.description, instruction.steps);
+    onLoadProject(
+      instruction.title, 
+      instruction.description, 
+      instruction.steps, 
+      instruction.groups || []
+    );
     onClose();
+  };
+
+  const handlePreview = (instruction: any) => {
+    onPreviewProject(
+      instruction.title, 
+      instruction.description, 
+      instruction.steps, 
+      instruction.groups || []
+    );
   };
 
   const handleDelete = (id: string) => {
@@ -65,6 +78,9 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({
                   </p>
                   <p className="text-xs text-slate-500 mt-2">
                     {instruction.steps.length} шагов
+                    {instruction.groups && instruction.groups.length > 0 && 
+                      ` • ${instruction.groups.length} групп`
+                    }
                   </p>
                   <p className="text-xs text-slate-500">
                     {new Date(instruction.updatedAt).toLocaleDateString('ru-RU')}
@@ -83,7 +99,7 @@ const SavedProjects: React.FC<SavedProjectsProps> = ({
                   
                   <Button
                     size="sm"
-                    onClick={() => onPreviewProject(instruction.title, instruction.description, instruction.steps)}
+                    onClick={() => handlePreview(instruction)}
                     className="bg-green-600 hover:bg-green-700 text-xs"
                   >
                     <Eye className="w-3 h-3 mr-1" />
