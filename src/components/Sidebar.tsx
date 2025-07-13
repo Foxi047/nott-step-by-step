@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Plus, Upload, Save, Download, FileText, Settings, FolderOpen, Clipboard, Code, Paperclip, Menu, X, FileUp, ChevronDown, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,9 +12,10 @@ interface SidebarProps {
   onSave: () => void;
   onExport: () => void;
   onImportJSON: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  
   onOpenSettings: () => void;
   onOpenSavedProjects: () => void;
+  onNewProject: () => void;
+  hasUnsavedChanges: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -26,9 +26,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSave,
   onExport,
   onImportJSON,
-  
   onOpenSettings,
-  onOpenSavedProjects
+  onOpenSavedProjects,
+  onNewProject,
+  hasUnsavedChanges
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -200,6 +201,14 @@ const Sidebar: React.FC<SidebarProps> = ({
           <h3 className="text-sm font-medium text-slate-300 mb-3">Действия</h3>
           
           <Button 
+            onClick={onNewProject} 
+            className="w-full justify-start bg-green-600 hover:bg-green-700 text-white h-9 text-sm"
+          >
+            <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span className="truncate">Новый проект</span>
+          </Button>
+
+          <Button 
             onClick={onSave} 
             className="w-full justify-start bg-slate-700 hover:bg-slate-600 text-white h-9 text-sm"
           >
@@ -239,7 +248,6 @@ const Sidebar: React.FC<SidebarProps> = ({
               <span className="truncate">Импорт JSON</span>
             </Button>
           </div>
-
 
           <Button 
             onClick={onOpenSettings} 

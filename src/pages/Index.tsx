@@ -9,7 +9,7 @@ import HtmlTemplateSelector from '../components/HtmlTemplateSelector';
 
 import FileEditor from '../components/FileEditor';
 import SaveOptionsDialog from '../components/SaveOptionsDialog';
-import { Step } from '../types/Step';
+import { Step, StepGroup } from '../types/Step';
 import { useInstructionStorage } from '../hooks/useInstructionStorage';
 import { useTheme, Theme } from '../hooks/useTheme';
 import { useSteps } from '../hooks/useSteps';
